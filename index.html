@@ -156,6 +156,56 @@
         box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28), 0 4px 12px rgba(234, 88, 12, 0.35);
       }
 
+      .recipe-card-rating {
+        line-height: 1.35;
+      }
+
+      .rating-stars-gold {
+        color: #f59e0b;
+        letter-spacing: 0.06em;
+      }
+
+      .rating-stars-muted {
+        color: #cbd5e1;
+        letter-spacing: 0.06em;
+      }
+
+      .modal-stars {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+      }
+
+      .modal-star-btn {
+        font-size: 2.35rem;
+        line-height: 1;
+        padding: 0.15rem 0.2rem;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        transition: transform 0.12s ease, color 0.12s ease;
+        color: #cbd5e1;
+      }
+
+      .modal-star-btn:hover:not(:disabled),
+      .modal-star-btn.is-filled,
+      .modal-star-btn.is-hover {
+        color: #f59e0b;
+        transform: scale(1.08);
+      }
+
+      .modal-star-btn:disabled {
+        cursor: default;
+        opacity: 0.85;
+      }
+
+      .review-feed-item {
+        border-radius: 0.75rem;
+        border: 1px solid rgba(251, 191, 36, 0.35);
+        background: rgba(255, 255, 255, 0.85);
+        padding: 0.75rem 1rem;
+      }
+
       /* —— Mobile (smartphone) —— */
       @media (max-width: 768px) {
         .hero-section {
@@ -439,6 +489,34 @@
             <section>
               <h4 class="text-xs font-bold uppercase tracking-wider text-orange-600">Preparazione</h4>
               <ol id="modal-steps" class="mt-2 list-decimal space-y-2 pl-5 text-sm leading-relaxed"></ol>
+            </section>
+            <section
+              id="modal-rating-section"
+              class="hidden rounded-2xl border border-amber-100/90 bg-gradient-to-br from-amber-50/70 to-orange-50/50 p-4 shadow-sm"
+            >
+              <h4 class="text-xs font-bold uppercase tracking-wider text-orange-600">La tua valutazione</h4>
+              <p id="modal-rating-aggregate" class="mt-2 text-sm font-semibold text-slate-800"></p>
+              <div id="modal-stars" class="modal-stars mt-3" role="group" aria-label="Voto da 1 a 5 stelle"></div>
+              <label for="modal-review-comment" class="sr-only">Commento recensione</label>
+              <textarea
+                id="modal-review-comment"
+                rows="3"
+                class="mt-4 w-full resize-y rounded-xl border border-orange-100/90 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm ring-1 ring-slate-900/5 placeholder:text-slate-400 focus:border-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
+                placeholder="Lascia un commento o un consiglio per questa ricetta (facoltativo)..."
+              ></textarea>
+              <button
+                type="button"
+                id="btn-submit-review"
+                class="mt-3 w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-4 py-3 text-sm font-bold text-white shadow-md transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Invia recensione
+              </button>
+              <p id="modal-review-feedback" class="mt-2 hidden text-sm font-medium text-emerald-800" role="status"></p>
+              <section class="mt-6 border-t border-amber-200/70 pt-5">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-orange-600">Commenti e recensioni</h4>
+                <div id="modal-reviews-list" class="mt-3 space-y-3"></div>
+                <p id="modal-reviews-empty" class="mt-2 hidden text-sm italic text-slate-500">Ancora nessuna recensione per questa ricetta.</p>
+              </section>
             </section>
           </div>
           <div id="modal-view-footer" class="flex shrink-0 flex-col gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 sm:flex-row">
@@ -759,6 +837,14 @@
       let modalEditPendingImageUrl = "";
       let modalEditPendingImageFile = null;
 
+      const USER_TOKEN_KEY = "ricettario_user_token";
+      let userToken = "";
+      let ratingsMap = {};
+      let modalHoverVote = 0;
+      let modalSelectedVote = 0;
+      let modalUserReview = null;
+      let modalReviewSubmitting = false;
+
       const sectionsRoot = document.getElementById("recipe-sections");
       const emptyState = document.getElementById("empty-state");
       const searchInput = document.getElementById("ingredient-search");
@@ -774,6 +860,14 @@
       const elDoses = document.getElementById("modal-doses");
       const elSteps = document.getElementById("modal-steps");
       const elMancanti = document.getElementById("modal-mancanti");
+      const modalRatingSection = document.getElementById("modal-rating-section");
+      const modalRatingAggregate = document.getElementById("modal-rating-aggregate");
+      const modalStarsEl = document.getElementById("modal-stars");
+      const modalReviewComment = document.getElementById("modal-review-comment");
+      const btnSubmitReview = document.getElementById("btn-submit-review");
+      const modalReviewFeedback = document.getElementById("modal-review-feedback");
+      const modalReviewsList = document.getElementById("modal-reviews-list");
+      const modalReviewsEmpty = document.getElementById("modal-reviews-empty");
       const modalImageWrap = document.getElementById("modal-image-wrap");
       const modalViewPanel = document.getElementById("modal-view-panel");
       const modalEditForm = document.getElementById("modal-edit-form");
@@ -820,6 +914,282 @@
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;")
           .replace(/"/g, "&quot;");
+      }
+
+      function getOrCreateUserToken() {
+        let token = localStorage.getItem(USER_TOKEN_KEY);
+        if (!token) {
+          token =
+            typeof crypto !== "undefined" && crypto.randomUUID
+              ? crypto.randomUUID()
+              : `u_${Date.now()}_${Math.random().toString(36).slice(2, 14)}`;
+          localStorage.setItem(USER_TOKEN_KEY, token);
+        }
+        return token;
+      }
+
+      function formatItalianReviewDate(iso) {
+        if (!iso) return "";
+        try {
+          return new Date(iso).toLocaleDateString("it-IT", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          });
+        } catch {
+          return "";
+        }
+      }
+
+      function starsDisplayChars(vote, max = 5) {
+        const v = Math.max(0, Math.min(max, Math.round(Number(vote) || 0)));
+        return "★".repeat(v) + "☆".repeat(max - v);
+      }
+
+      function buildRatingsMap(valutazioni) {
+        const map = {};
+        for (const row of valutazioni || []) {
+          const rid = String(row.ricetta_id);
+          if (!map[rid]) map[rid] = { sum: 0, count: 0, items: [] };
+          const voto = Number(row.voto);
+          if (voto >= 1 && voto <= 5) {
+            map[rid].sum += voto;
+            map[rid].count += 1;
+          }
+          map[rid].items.push(row);
+        }
+        for (const rid of Object.keys(map)) {
+          const bucket = map[rid];
+          bucket.avg = bucket.count ? bucket.sum / bucket.count : 0;
+        }
+        return map;
+      }
+
+      function getRatingStats(recipeId) {
+        const bucket = ratingsMap[String(recipeId)];
+        if (!bucket || !bucket.count) return { avg: 0, count: 0 };
+        return { avg: bucket.avg, count: bucket.count };
+      }
+
+      function votesCountLabel(count) {
+        return count === 1 ? "1 voto" : `${count} voti`;
+      }
+
+      function cardRatingHtml(recipeId) {
+        if (!cloudConnected) return "";
+        const { avg, count } = getRatingStats(recipeId);
+        if (!count) {
+          return `<span class="recipe-card-rating mt-1.5 flex flex-wrap items-center gap-1.5 text-sm" aria-label="Nessuna valutazione">
+            <span class="rating-stars-muted" aria-hidden="true">☆☆☆☆☆</span>
+            <span class="text-slate-500">Nessuna valutazione</span>
+          </span>`;
+        }
+        const votes = escapeHtml(votesCountLabel(count));
+        return `<span class="recipe-card-rating mt-1.5 flex flex-wrap items-center gap-1.5 text-sm" aria-label="Media ${avg.toFixed(1)}, ${votesCountLabel(count)}">
+          <span class="rating-stars-gold" aria-hidden="true">★</span>
+          <span class="font-semibold text-amber-700">${avg.toFixed(1)}</span>
+          <span class="text-slate-500">(${votes})</span>
+        </span>`;
+      }
+
+      async function fetchAllValutazioni() {
+        const { data, error } = await supabaseClient
+          .from("valutazioni")
+          .select("id, created_at, ricetta_id, voto, commento, utente_token")
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        return data || [];
+      }
+
+      async function refreshRatingsFromCloud() {
+        if (!cloudConnected) {
+          ratingsMap = {};
+          return;
+        }
+        try {
+          const rows = await fetchAllValutazioni();
+          ratingsMap = buildRatingsMap(rows);
+        } catch (err) {
+          console.warn("Impossibile caricare le valutazioni:", err);
+        }
+      }
+
+      function showReviewFeedback(message, isError = false) {
+        if (!modalReviewFeedback) return;
+        if (!message) {
+          modalReviewFeedback.classList.add("hidden");
+          modalReviewFeedback.textContent = "";
+          return;
+        }
+        modalReviewFeedback.textContent = message;
+        modalReviewFeedback.classList.remove("hidden", "text-emerald-800", "text-rose-700");
+        modalReviewFeedback.classList.add(isError ? "text-rose-700" : "text-emerald-800");
+      }
+
+      function renderModalStars() {
+        if (!modalStarsEl) return;
+        const display = modalHoverVote || modalSelectedVote || 0;
+        modalStarsEl.innerHTML = "";
+        for (let i = 1; i <= 5; i++) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "modal-star-btn";
+          if (i <= display) btn.classList.add(i <= (modalHoverVote || modalSelectedVote) ? "is-filled" : "");
+          if (modalHoverVote && i <= modalHoverVote) btn.classList.add("is-hover");
+          else if (!modalHoverVote && i <= modalSelectedVote) btn.classList.add("is-filled");
+          btn.setAttribute("data-vote", String(i));
+          btn.setAttribute("aria-label", `${i} ${i === 1 ? "stella" : "stelle"}`);
+          btn.textContent = i <= display ? "★" : "☆";
+          if (modalReviewSubmitting) btn.disabled = true;
+          modalStarsEl.appendChild(btn);
+        }
+      }
+
+      function renderModalReviewsFeed(recipeId) {
+        if (!modalReviewsList || !modalReviewsEmpty) return;
+        const bucket = ratingsMap[String(recipeId)];
+        const items = [...(bucket?.items || [])].sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        );
+
+        if (!items.length) {
+          modalReviewsList.innerHTML = "";
+          modalReviewsEmpty.classList.remove("hidden");
+          modalReviewsEmpty.textContent = "Ancora nessuna recensione per questa ricetta.";
+          return;
+        }
+
+        modalReviewsEmpty.classList.add("hidden");
+        modalReviewsList.innerHTML = items
+          .map((rev) => {
+            const voto = Number(rev.voto) || 0;
+            const dateStr = formatItalianReviewDate(rev.created_at);
+            const commentRaw = (rev.commento || "").trim();
+            const commentHtml = commentRaw
+              ? `<p class="mt-2 text-sm leading-relaxed text-slate-700">${escapeHtml(commentRaw)}</p>`
+              : `<p class="mt-2 text-sm italic text-slate-400">Nessun commento testuale.</p>`;
+            const mine =
+              rev.utente_token === userToken
+                ? '<span class="ml-2 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-orange-800">Tu</span>'
+                : "";
+            return `<article class="review-feed-item" data-review-id="${escapeHtml(String(rev.id))}">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="rating-stars-gold text-base tracking-wide" aria-label="${voto} stelle su 5">${starsDisplayChars(voto)}</span>
+                <span class="text-xs font-medium text-slate-500">${escapeHtml(dateStr)}</span>${mine}
+              </div>
+              ${commentHtml}
+            </article>`;
+          })
+          .join("");
+      }
+
+      function populateModalRatings(recipe) {
+        if (!recipe || !modalRatingSection) return;
+
+        if (!cloudConnected) {
+          modalRatingSection.classList.add("hidden");
+          return;
+        }
+
+        modalRatingSection.classList.remove("hidden");
+        const recipeId = String(recipe.id);
+        const bucket = ratingsMap[recipeId];
+        modalUserReview = (bucket?.items || []).find((v) => v.utente_token === userToken) || null;
+        modalSelectedVote = modalUserReview ? Number(modalUserReview.voto) : 0;
+        modalHoverVote = 0;
+
+        const { avg, count } = getRatingStats(recipe.id);
+        if (modalRatingAggregate) {
+          modalRatingAggregate.textContent = count
+            ? `Media ★ ${avg.toFixed(1)} · ${votesCountLabel(count)}`
+            : "Nessuna valutazione ancora — sii il primo a votare!";
+        }
+
+        if (modalReviewComment) {
+          modalReviewComment.value = (modalUserReview?.commento || "").trim();
+          modalReviewComment.disabled = modalReviewSubmitting;
+        }
+        if (btnSubmitReview) {
+          btnSubmitReview.textContent = modalUserReview ? "Aggiorna recensione" : "Invia recensione";
+          btnSubmitReview.disabled = modalReviewSubmitting;
+        }
+
+        showReviewFeedback("");
+        renderModalStars();
+        renderModalReviewsFeed(recipe.id);
+      }
+
+      async function submitOrUpdateReview() {
+        if (!cloudConnected || !viewingRecipeId || modalReviewSubmitting) return;
+
+        const voto = Number(modalSelectedVote);
+        if (!voto || voto < 1 || voto > 5) {
+          showReviewFeedback("Seleziona un voto da 1 a 5 stelle prima di inviare.", true);
+          return;
+        }
+
+        const commento = (modalReviewComment?.value || "").trim();
+        modalReviewSubmitting = true;
+        if (btnSubmitReview) btnSubmitReview.disabled = true;
+        if (modalReviewComment) modalReviewComment.disabled = true;
+        showReviewFeedback("");
+
+        try {
+          if (modalUserReview?.id) {
+            const { data, error } = await supabaseClient
+              .from("valutazioni")
+              .update({ voto, commento: commento || null })
+              .eq("id", modalUserReview.id)
+              .select("id, created_at, ricetta_id, voto, commento, utente_token")
+              .single();
+            if (error) throw error;
+            modalUserReview = data;
+            showReviewFeedback("Recensione aggiornata con successo!");
+          } else {
+            const { data, error } = await supabaseClient
+              .from("valutazioni")
+              .insert({
+                ricetta_id: viewingRecipeId,
+                voto,
+                commento: commento || null,
+                utente_token: userToken,
+              })
+              .select("id, created_at, ricetta_id, voto, commento, utente_token")
+              .single();
+            if (error) {
+              if (error.code === "23505") {
+                const { data: upd, error: updErr } = await supabaseClient
+                  .from("valutazioni")
+                  .update({ voto, commento: commento || null })
+                  .eq("ricetta_id", viewingRecipeId)
+                  .eq("utente_token", userToken)
+                  .select("id, created_at, ricetta_id, voto, commento, utente_token")
+                  .single();
+                if (updErr) throw updErr;
+                modalUserReview = upd;
+                showReviewFeedback("Recensione aggiornata con successo!");
+              } else {
+                throw error;
+              }
+            } else {
+              modalUserReview = data;
+              showReviewFeedback("Grazie per aver votato!");
+            }
+          }
+
+          await refreshRatingsFromCloud();
+          renderRecipeSections();
+          const current = findRecipe(viewingRecipeId);
+          if (current) populateModalRatings(current);
+        } catch (err) {
+          console.error(err);
+          showReviewFeedback(formatSupabaseError(err), true);
+        } finally {
+          modalReviewSubmitting = false;
+          if (btnSubmitReview) btnSubmitReview.disabled = false;
+          if (modalReviewComment) modalReviewComment.disabled = false;
+          renderModalStars();
+        }
       }
 
       /** Risolve URL assoluto, percorso relativo o nome file locale */
@@ -1149,12 +1519,24 @@
           supabaseClient.removeChannel(realtimeChannel);
         }
         realtimeChannel = supabaseClient
-          .channel("ricette-live")
+          .channel("ricettario-live")
           .on(
             "postgres_changes",
             { event: "*", schema: "public", table: "ricette" },
             () => {
               refreshFromCloud({ silent: true });
+            }
+          )
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "valutazioni" },
+            async () => {
+              await refreshRatingsFromCloud();
+              renderRecipeSections();
+              if (viewingRecipeId && !modal.classList.contains("hidden")) {
+                const current = findRecipe(viewingRecipeId);
+                if (current) populateModalRatings(current);
+              }
             }
           )
           .subscribe();
@@ -1165,7 +1547,12 @@
         try {
           recipes = await fetchAllRecipes();
           cloudConnected = true;
+          await refreshRatingsFromCloud();
           renderRecipeSections();
+          if (viewingRecipeId && !modal.classList.contains("hidden")) {
+            const current = findRecipe(viewingRecipeId);
+            if (current) populateModalRatings(current);
+          }
         } catch (err) {
           console.error("Errore sincronizzazione:", err);
         } finally {
@@ -1175,6 +1562,7 @@
       }
 
       async function initApp() {
+        userToken = getOrCreateUserToken();
         setLoading(true);
         updateCrudAvailability();
 
@@ -1195,12 +1583,16 @@
           }
 
           if (cloudConnected) {
+            await refreshRatingsFromCloud();
             subscribeRealtime();
+          } else {
+            ratingsMap = {};
           }
         } catch (err) {
           console.warn("Cloud non raggiungibile, anteprima locale:", err);
           recipes = SEED_RECIPES.map((s, i) => seedToRecipe(s, i));
           cloudConnected = false;
+          ratingsMap = {};
         } finally {
           renderRecipeSections();
           updateCrudAvailability();
@@ -1310,6 +1702,7 @@
               ${thumb}
               <span class="recipe-card-body flex flex-1 flex-col p-5">
                 <span class="recipe-card-title font-display text-lg font-bold text-slate-900 group-hover:text-orange-700">${title}</span>
+                ${cardRatingHtml(r.id)}
                 <span class="recipe-card-tagline mt-2 text-sm text-slate-600 leading-snug">${tag}</span>
                 <span class="recipe-card-cta mt-4 inline-flex items-center text-xs font-semibold text-orange-600">
                   Apri dettaglio
@@ -1431,6 +1824,8 @@
           elMancanti.classList.add("hidden");
         }
 
+        populateModalRatings(recipe);
+
         modal.classList.remove("hidden");
         modal.classList.add("flex");
         modal.setAttribute("aria-hidden", "false");
@@ -1440,6 +1835,10 @@
       function closeViewModal() {
         viewingRecipeId = null;
         viewingRecipe = null;
+        modalSelectedVote = 0;
+        modalHoverVote = 0;
+        modalUserReview = null;
+        showReviewFeedback("");
         showModalViewMode();
         elMancanti.textContent = "";
         elMancanti.classList.add("hidden");
@@ -1671,6 +2070,32 @@
         if (r) openModalEditMode(r);
       });
       btnModalDelete.addEventListener("click", () => deleteRecipeById(viewingRecipeId));
+      btnSubmitReview.addEventListener("click", () => submitOrUpdateReview());
+
+      modalStarsEl.addEventListener("click", (e) => {
+        const btn = e.target.closest(".modal-star-btn");
+        if (!btn || modalReviewSubmitting) return;
+        modalSelectedVote = Number(btn.getAttribute("data-vote")) || 0;
+        modalHoverVote = 0;
+        showReviewFeedback("");
+        renderModalStars();
+      });
+
+      modalStarsEl.addEventListener("mouseover", (e) => {
+        const btn = e.target.closest(".modal-star-btn");
+        if (!btn || modalReviewSubmitting) return;
+        modalHoverVote = Number(btn.getAttribute("data-vote")) || 0;
+        renderModalStars();
+      });
+
+      modalStarsEl.addEventListener("mouseout", (e) => {
+        if (modalReviewSubmitting) return;
+        if (!modalStarsEl.contains(e.relatedTarget)) {
+          modalHoverVote = 0;
+          renderModalStars();
+        }
+      });
+
       modalEditCancel.addEventListener("click", () => {
         if (viewingRecipe) openViewModal(viewingRecipe);
         else closeViewModal();
