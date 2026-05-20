@@ -47,13 +47,139 @@
         outline-offset: 2px;
       }
 
+      /* Hero — sfondo nativo 1920×1080 (sostituire images/hero-1920x1080.jpg con il render Flux) */
+      .hero-section {
+        position: relative;
+        width: 100%;
+        min-height: 380px;
+        padding: 60px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background-color: #1c1410;
+        background-image: url("images/hero-1920x1080.jpg");
+        background-size: cover;
+        background-position: center 35%;
+        background-repeat: no-repeat;
+      }
+
+      .hero-section::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          180deg,
+          rgba(0, 0, 0, 0.4) 0%,
+          rgba(0, 0, 0, 0.52) 45%,
+          rgba(0, 0, 0, 0.6) 100%
+        );
+        pointer-events: none;
+      }
+
+      .hero-section__inner {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        max-width: 72rem;
+        margin: 0 auto;
+        padding: 0 1rem;
+      }
+
+      .hero-brand {
+        text-align: center;
+        max-width: 42rem;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .hero-tagline {
+        font-size: 0.8125rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.9);
+        text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+      }
+
+      .hero-tagline + .hero-tagline {
+        margin-top: 0.5rem;
+      }
+
+      .hero-section .app-title {
+        margin-top: 0.75rem;
+        font-family: Outfit, system-ui, sans-serif;
+        font-size: clamp(2rem, 5vw, 3.25rem);
+        font-weight: 700;
+        line-height: 1.1;
+        letter-spacing: -0.03em;
+        color: #fff;
+        text-shadow: 0 2px 24px rgba(0, 0, 0, 0.45);
+        background: none;
+        -webkit-background-clip: unset;
+        background-clip: unset;
+      }
+
+      .hero-controls {
+        margin-top: 2rem;
+        max-width: 48rem;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .hero-controls label {
+        color: rgba(255, 255, 255, 0.95);
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .hero-search-input {
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22), 0 2px 8px rgba(0, 0, 0, 0.12);
+      }
+
+      .hero-search-input:focus {
+        border-color: rgba(251, 191, 136, 0.9);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), 0 0 0 3px rgba(251, 146, 60, 0.35);
+      }
+
+      .hero-search-hint {
+        color: rgba(255, 255, 255, 0.82) !important;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+      }
+
+      .hero-search-hint strong {
+        color: rgba(255, 255, 255, 0.95);
+      }
+
+      .hero-btn-add {
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28), 0 4px 12px rgba(234, 88, 12, 0.35);
+      }
+
       /* —— Mobile (smartphone) —— */
       @media (max-width: 768px) {
-        .app-header-shell {
-          padding-top: 1.25rem !important;
-          padding-bottom: 1.25rem !important;
-          padding-left: 0.875rem !important;
-          padding-right: 0.875rem !important;
+        .hero-section {
+          min-height: 320px;
+          padding: 40px 16px;
+          background-position: center 30%;
+        }
+
+        .hero-section .app-title {
+          font-size: clamp(1.35rem, 6vw, 1.85rem) !important;
+          white-space: normal;
+        }
+
+        .hero-tagline {
+          font-size: 0.65rem;
+          letter-spacing: 0.1em;
+        }
+
+        .hero-tagline + .hero-tagline {
+          margin-top: 0.35rem;
+        }
+
+        .hero-controls {
+          margin-top: 1.5rem !important;
         }
 
         .app-main {
@@ -63,28 +189,8 @@
           padding-right: 0.875rem !important;
         }
 
-        .app-eyebrow {
-          font-size: 0.65rem;
-          letter-spacing: 0.12em;
-        }
-
-        .app-title {
-          font-size: clamp(1.25rem, 5.2vw, 1.65rem) !important;
-          line-height: 1.15 !important;
-          letter-spacing: -0.02em;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .app-subtitle {
-          font-size: 0.875rem !important;
-          line-height: 1.45;
-          margin-top: 0.5rem !important;
-        }
-
         .app-search-block {
-          margin-top: 1.25rem !important;
+          margin-top: 0 !important;
         }
 
         .app-search-hint {
@@ -211,62 +317,52 @@
           margin-right: auto;
         }
 
-        .app-title {
-          font-size: 1.2rem !important;
-        }
       }
     </style>
   </head>
   <body class="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50/80 to-rose-50 font-sans text-slate-800 antialiased">
-    <header class="border-b border-orange-100/80 bg-white/60 backdrop-blur-md">
-      <div class="app-header-shell mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-          <div class="min-w-0 flex-1">
-            <p class="app-eyebrow text-sm font-semibold uppercase tracking-widest text-orange-600/90">
-              La tua cucina, organizzata · Cloud Supabase
-            </p>
-            <h1
-              class="app-title mt-2 font-display text-4xl font-bold tracking-tight text-transparent sm:text-5xl bg-gradient-to-r from-orange-600 via-rose-600 to-amber-600 bg-clip-text"
-            >
-              Il Mio Ricettario Smart
-            </h1>
-            <p class="app-subtitle mt-3 max-w-2xl text-lg text-slate-600">
-              Ricette condivise in tempo reale: tutti vedono aggiunte, modifiche ed eliminazioni sul cloud.
-            </p>
-        </div>
-
-        <div class="app-search-block mt-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div class="max-w-2xl flex-1">
-            <label for="ingredient-search" class="mb-2 block text-sm font-semibold text-slate-700">
-              Cerca per ingredienti
-            </label>
-            <div class="relative">
-              <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400" aria-hidden="true">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
-                </svg>
-              </span>
-              <input
-                id="ingredient-search"
-                type="search"
-                autocomplete="off"
-                placeholder="Es. uovo, mascarpone (separati da virgola)"
-                class="w-full rounded-2xl border border-orange-100 bg-white/90 py-3.5 pl-12 pr-4 text-slate-800 shadow-inner shadow-orange-900/5 ring-1 ring-slate-900/5 transition placeholder:text-slate-400 focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-400/60"
-              />
-            </div>
-            <p class="app-search-hint mt-2 text-sm text-slate-500">
-              Separa gli ingredienti con la virgola: restano solo le ricette che <strong class="font-semibold text-slate-600">contengono tutti</strong> i termini. Riconosce anche <strong class="font-semibold text-slate-600">singolare/plurale</strong>.
-            </p>
+    <header class="border-b border-orange-900/20">
+      <section class="hero-section" aria-label="Introduzione">
+        <div class="hero-section__inner">
+          <div class="hero-brand">
+            <p class="hero-tagline">La tua cucina, organizzata in cloud.</p>
+            <h1 class="app-title">Il Mio Ricettario Smart</h1>
+            <p class="hero-tagline">Ricette condivise in tempo reale.</p>
           </div>
-          <button
-            type="button"
-            id="btn-add-recipe"
-            class="shrink-0 rounded-2xl bg-gradient-to-r from-orange-600 to-rose-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-orange-600/25 transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            + Nuova Ricetta
-          </button>
+
+          <div class="app-search-block hero-controls flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div class="w-full flex-1 sm:max-w-2xl">
+              <label for="ingredient-search" class="mb-2 block text-sm font-semibold">
+                Cerca per ingredienti
+              </label>
+              <div class="relative">
+                <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400" aria-hidden="true">
+                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+                  </svg>
+                </span>
+                <input
+                  id="ingredient-search"
+                  type="search"
+                  autocomplete="off"
+                  placeholder="Es. uovo, mascarpone (separati da virgola)"
+                  class="hero-search-input w-full rounded-2xl py-3.5 pl-12 pr-4 text-slate-800 ring-1 ring-slate-900/5 transition placeholder:text-slate-400 focus:outline-none"
+                />
+              </div>
+              <p class="app-search-hint hero-search-hint mt-2 text-sm">
+                Separa gli ingredienti con la virgola: restano solo le ricette che <strong>contengono tutti</strong> i termini. Riconosce anche <strong>singolare/plurale</strong>.
+              </p>
+            </div>
+            <button
+              type="button"
+              id="btn-add-recipe"
+              class="hero-btn-add shrink-0 rounded-2xl bg-gradient-to-r from-orange-600 to-rose-600 px-6 py-3.5 text-sm font-bold text-white transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              + Nuova Ricetta
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
     </header>
 
     <main class="app-main relative mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
