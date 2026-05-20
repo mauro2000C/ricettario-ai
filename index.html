@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Il Mio Ricettario Smart</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["DM Sans", "system-ui", "sans-serif"],
+              display: ["Outfit", "system-ui", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=Outfit:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      .accordion-panel {
+        display: grid;
+        grid-template-rows: 0fr;
+        transition: grid-template-rows 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .accordion-section.is-open .accordion-panel {
+        grid-template-rows: 1fr;
+      }
+      .accordion-inner {
+        min-height: 0;
+      }
+      .chevron-icon {
+        transition: transform 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .accordion-section.is-open .chevron-icon {
+        transform: rotate(180deg);
+      }
+      .file-upload-zone:has(input:focus-visible) {
+        outline: 2px solid rgb(251 146 60);
+        outline-offset: 2px;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50/80 to-rose-50 font-sans text-slate-800 antialiased">
+    <header class="border-b border-orange-100/80 bg-white/60 backdrop-blur-md">
+      <div class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-semibold uppercase tracking-widest text-orange-600/90">
+              La tua cucina, organizzata · Cloud Supabase
+            </p>
+            <h1
+              class="mt-2 font-display text-4xl font-bold tracking-tight text-transparent sm:text-5xl bg-gradient-to-r from-orange-600 via-rose-600 to-amber-600 bg-clip-text"
+            >
+              Il Mio Ricettario Smart
+            </h1>
+            <p class="mt-3 max-w-2xl text-lg text-slate-600">
+              Ricette condivise in tempo reale: tutti vedono aggiunte, modifiche ed eliminazioni sul cloud.
+            </p>
+        </div>
+
+        <div id="cloud-banner" class="mt-6 hidden rounded-2xl border px-4 py-3 text-sm" role="status" aria-live="polite"></div>
+
+        <div class="mt-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div class="max-w-2xl flex-1">
+            <label for="ingredient-search" class="mb-2 block text-sm font-semibold text-slate-700">
+              Cerca per ingredienti
+            </label>
+            <div class="relative">
+              <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400" aria-hidden="true">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+                </svg>
+              </span>
+              <input
+                id="ingredient-search"
+                type="search"
+                autocomplete="off"
+                placeholder="Es. uovo, mascarpone (separati da virgola)"
+                class="w-full rounded-2xl border border-orange-100 bg-white/90 py-3.5 pl-12 pr-4 text-slate-800 shadow-inner shadow-orange-900/5 ring-1 ring-slate-900/5 transition placeholder:text-slate-400 focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-400/60"
+              />
+            </div>
+            <p class="mt-2 text-sm text-slate-500">
+              Separa gli ingredienti con la virgola: restano solo le ricette che <strong class="font-semibold text-slate-600">contengono tutti</strong> i termini. Riconosce anche <strong class="font-semibold text-slate-600">singolare/plurale</strong>.
+            </p>
+          </div>
+          <button
+            type="button"
+            id="btn-add-recipe"
+            class="shrink-0 rounded-2xl bg-gradient-to-r from-orange-600 to-rose-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-orange-600/25 transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            + Nuova Ricetta
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="relative mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+      <div
+        id="loading-overlay"
+        class="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/70 backdrop-blur-sm"
+      >
+        <p class="font-display text-lg font-semibold text-orange-700">Caricamento ricette dal cloud…</p>
+      </div>
+
+      <h2 class="sr-only">Ricette</h2>
+      <div
+        id="empty-state"
+        class="hidden rounded-2xl border border-dashed border-orange-200 bg-white/70 px-6 py-16 text-center shadow-sm"
+        role="status"
+        aria-live="polite"
+      >
+        <p class="font-display text-lg font-semibold text-slate-800">Nessuna ricetta trovata per questi ingredienti</p>
+        <p class="mx-auto mt-2 max-w-md text-sm text-slate-600">
+          Prova con meno parole, controlla l’ortografia oppure rimuovi qualche ingrediente dalla ricerca.
+        </p>
+      </div>
+      <div id="recipe-sections" class="space-y-2"></div>
+    </main>
+
+    <div
+      id="app-toast"
+      class="pointer-events-none fixed bottom-6 left-1/2 z-[70] hidden max-w-md -translate-x-1/2 rounded-2xl px-5 py-3 text-center text-sm font-semibold shadow-lg ring-1"
+      role="status"
+      aria-live="polite"
+    ></div>
+
+    <!-- Modal dettaglio -->
+    <div
+      id="recipe-modal"
+      class="fixed inset-0 z-50 hidden items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      aria-hidden="true"
+    >
+      <div id="modal-backdrop" class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" aria-hidden="true"></div>
+      <div
+        class="relative z-10 flex w-full max-w-xl max-h-[90vh] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl shadow-orange-900/10 ring-1 ring-slate-900/5"
+        role="document"
+      >
+        <div id="modal-image-wrap" class="relative w-full shrink-0 overflow-hidden bg-gradient-to-br from-orange-100 to-amber-50"></div>
+        <div class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-100 bg-white/95 px-6 py-4 backdrop-blur">
+          <h3 id="modal-title" class="font-display text-xl font-bold text-slate-900 pr-2"></h3>
+          <button
+            type="button"
+            id="modal-close"
+            class="shrink-0 rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+            aria-label="Chiudi"
+          >
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Vista dettaglio -->
+        <div id="modal-view-panel" class="flex min-h-0 flex-1 flex-col">
+          <div class="flex-1 space-y-6 overflow-y-auto px-6 py-5 text-slate-700">
+            <section>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-orange-600">Ingredienti</h4>
+              <ul id="modal-ingredients" class="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed"></ul>
+              <p id="modal-mancanti" class="mt-3 hidden rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 text-sm text-amber-950" role="status"></p>
+            </section>
+            <section>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-orange-600">Dosi</h4>
+              <p id="modal-doses" class="mt-2 text-sm leading-relaxed"></p>
+            </section>
+            <section>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-orange-600">Preparazione</h4>
+              <ol id="modal-steps" class="mt-2 list-decimal space-y-2 pl-5 text-sm leading-relaxed"></ol>
+            </section>
+          </div>
+          <div id="modal-view-footer" class="flex shrink-0 flex-col gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 sm:flex-row">
+            <button
+              type="button"
+              id="btn-modal-edit"
+              class="flex-1 rounded-xl bg-amber-400 px-4 py-3 text-sm font-bold text-amber-950 shadow-sm transition hover:bg-amber-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+            >
+              Modifica Ricetta
+            </button>
+            <button
+              type="button"
+              id="btn-modal-delete"
+              class="flex-1 rounded-xl bg-rose-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-rose-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+            >
+              Elimina Ricetta
+            </button>
+          </div>
+        </div>
+
+        <!-- Modifica inline nel popup -->
+        <form id="modal-edit-form" class="hidden min-h-0 flex-1 flex-col">
+          <input type="hidden" id="modal-edit-id" />
+          <div id="modal-edit-scroll" class="flex-1 space-y-4 overflow-y-auto px-6 py-5">
+            <section class="rounded-2xl border-2 border-orange-200/90 bg-gradient-to-br from-orange-50/80 to-amber-50/50 p-4 shadow-sm">
+              <h4 class="text-sm font-bold uppercase tracking-wider text-orange-700">Foto della ricetta</h4>
+              <p class="mt-1 text-xs text-slate-600">Carica o sostituisci l’immagine (768×768 o 1024×768). Salvata su Supabase Storage.</p>
+              <div id="modal-edit-image-preview" class="mt-3 overflow-hidden rounded-xl border border-orange-100 bg-slate-100">
+                <img alt="Anteprima foto in modifica" class="aspect-[4/3] w-full object-cover" />
+              </div>
+              <label
+                for="modal-edit-image-file"
+                class="file-upload-zone mt-3 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-orange-300 bg-white/70 px-4 py-5 transition hover:border-orange-400 hover:bg-white"
+              >
+                <input id="modal-edit-image-file" type="file" accept="image/*" class="sr-only" />
+                <svg class="mb-2 h-10 w-10 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span class="text-sm font-semibold text-orange-900">Scegli nuova foto</span>
+                <span class="mt-1 text-xs text-slate-500">JPG, PNG, WebP — upload automatico al bucket ricette-immagini</span>
+              </label>
+              <button
+                type="button"
+                id="btn-modal-edit-pick-photo"
+                class="mt-3 w-full rounded-xl border border-orange-200 bg-white px-4 py-2.5 text-sm font-semibold text-orange-800 shadow-sm transition hover:bg-orange-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+              >
+                Carica o cambia foto
+              </button>
+              <p id="modal-edit-upload-status" class="mt-2 hidden text-sm font-medium"></p>
+            </section>
+            <div>
+              <label for="modal-edit-titolo" class="mb-1 block text-sm font-semibold text-slate-700">Titolo *</label>
+              <input id="modal-edit-titolo" required class="w-full rounded-xl border border-orange-100 px-3 py-2.5 ring-1 ring-slate-900/5 focus:ring-2 focus:ring-orange-400/60" />
+            </div>
+            <div>
+              <label for="modal-edit-categoria" class="mb-1 block text-sm font-semibold text-slate-700">Categoria *</label>
+              <select id="modal-edit-categoria" required class="w-full rounded-xl border border-orange-100 px-3 py-2.5 ring-1 ring-slate-900/5 focus:ring-2 focus:ring-orange-400/60">
+                <option value="Primi">Primi</option>
+                <option value="Secondi">Secondi</option>
+                <option value="Contorno">Contorno</option>
+                <option value="Dolci">Dolci</option>
+              </select>
+            </div>
+            <div>
+              <label for="modal-edit-descrizione" class="mb-1 block text-sm font-semibold text-slate-700">Descrizione *</label>
+              <input id="modal-edit-descrizione" required class="w-full rounded-xl border border-orange-100 px-3 py-2.5 ring-1 ring-slate-900/5 focus:ring-2 focus:ring-orange-400/60" />
+            </div>
+            <div>
+              <label for="modal-edit-ingredienti" class="mb-1 block text-sm font-semibold text-slate-700">Ingredienti * (virgola)</label>
+              <textarea id="modal-edit-ingredienti" required rows="3" class="w-full rounded-xl border border-orange-100 px-3 py-2.5 text-sm ring-1 ring-slate-900/5 focus:ring-2 focus:ring-orange-400/60"></textarea>
+            </div>
+            <div>
+              <label for="modal-edit-preparazione" class="mb-1 block text-sm font-semibold text-slate-700">Preparazione * (un passo per riga)</label>
+              <textarea id="modal-edit-preparazione" required rows="5" class="w-full rounded-xl border border-orange-100 px-3 py-2.5 text-sm ring-1 ring-slate-900/5 focus:ring-2 focus:ring-orange-400/60"></textarea>
+            </div>
+            <p id="modal-edit-success" class="hidden rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-900" role="status"></p>
+            <p id="modal-edit-error" class="hidden rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800" role="alert"></p>
+          </div>
+          <div class="flex shrink-0 flex-col gap-2 border-t border-slate-200 bg-slate-50 px-6 py-4 sm:flex-row">
+            <button type="submit" class="flex-1 rounded-xl bg-gradient-to-r from-orange-600 to-rose-600 px-4 py-3 text-sm font-bold text-white shadow-md hover:brightness-110">Aggiorna</button>
+            <button type="button" id="modal-edit-cancel" class="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Annulla</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal form aggiungi / modifica -->
+    <div
+      id="form-modal"
+      class="fixed inset-0 z-[60] hidden items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="form-modal-title"
+      aria-hidden="true"
+    >
+      <div id="form-backdrop" class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" aria-hidden="true"></div>
+      <div class="relative z-10 w-full max-w-xl max-h-[92vh] overflow-y-auto rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/5">
+        <div class="sticky top-0 flex items-center justify-between border-b border-slate-100 bg-white/95 px-6 py-4 backdrop-blur">
+          <h3 id="form-modal-title" class="font-display text-xl font-bold text-slate-900">Nuova Ricetta</h3>
+          <button type="button" id="form-close" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Chiudi form">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <form id="recipe-form" class="space-y-4 px-6 py-5">
+          <input type="hidden" id="form-id" value="" />
+          <div>
+            <label for="form-titolo" class="mb-1 block text-sm font-semibold text-slate-700">Titolo *</label>
+            <input id="form-titolo" required class="w-full rounded-xl border border-orange-100 px-3 py-2.5 ring-1 ring-slate-900/5 focus:ring-2 focus:ring-orange-400/60" />
+          </div>
+          <div>
+            <label for="form-categoria" class="mb-1 block text-sm font-semibold text-slate-700">Categoria *</label>
+            <select id="form-categoria" required class="w-full rounded-xl border border-orange-100 px-3 py-2.5 ring-1 ring-slate-900/5 focus:ring-2 focus:ring-orange-400/60">
+              <option value="Primi">Primi</option>
+              <option value="Secondi">Secondi</option>
+              <option value="Contorno">Contorno</option>
+              <option value="Dolci">Dolci</option>
+            </select>
+          </div>
+          <div>
+            <label for="form-descrizione" class="mb-1 block text-sm font-semibold text-slate-700">Descrizione breve *</label>
+            <input id="form-descrizione" required class="w-full rounded-xl border border-orange-100 px-3 py-2.5 ring-1 ring-slate-900/5 focus:ring-2 focus:ring-orange-400/60" />
+          </div>
+          <div>
+            <label for="form-ingredienti" class="mb-1 block text-sm font-semibold text-slate-700">Ingredienti * (separati da virgola)</label>
+            <textarea id="form-ingredienti" required rows="3" placeholder="Es. spaghetti, guanciale, uovo, pecorino" class="w-full rounded-xl border border-orange-100 px-3 py-2.5 text-sm ring-1 ring-slate-900/5 focus:ring-2 focus:ring-orange-400/60"></textarea>
+          </div>
+          <div>
+            <label for="form-preparazione" class="mb-1 block text-sm font-semibold text-slate-700">Preparazione * (un passo per riga)</label>
+            <textarea id="form-preparazione" required rows="6" class="w-full rounded-xl border border-orange-100 px-3 py-2.5 font-mono text-sm ring-1 ring-slate-900/5 focus:ring-2 focus:ring-orange-400/60"></textarea>
+          </div>
+          <div>
+            <span class="mb-1 block text-sm font-semibold text-slate-700">Foto ricetta</span>
+            <label class="file-upload-zone flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-orange-200 bg-orange-50/40 px-4 py-6 transition hover:border-orange-300 hover:bg-orange-50">
+              <input id="form-image-file" type="file" accept="image/*" class="sr-only" />
+              <svg class="mb-2 h-10 w-10 text-orange-500/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span class="text-sm font-semibold text-orange-800">Scegli immagine (768×768 o 1024×768)</span>
+              <span class="mt-1 text-xs text-slate-500">Caricamento automatico su Supabase Storage</span>
+            </label>
+            <p id="form-upload-status" class="mt-2 hidden text-sm font-medium text-orange-700"></p>
+            <div id="form-image-preview" class="mt-3 hidden overflow-hidden rounded-xl border border-orange-100 bg-slate-100">
+              <img alt="Anteprima nuova ricetta" class="aspect-[4/3] w-full object-cover" />
+            </div>
+            <input type="hidden" id="form-immagine-url" value="" />
+          </div>
+          <p id="form-success" class="hidden rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-900" role="status"></p>
+          <p id="form-error" class="hidden rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800" role="alert"></p>
+          <div class="flex flex-wrap gap-2 pt-2">
+            <button
+              type="submit"
+              id="form-submit"
+              class="rounded-xl bg-gradient-to-r from-orange-600 to-rose-600 px-5 py-2.5 text-sm font-bold text-white shadow-md hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+            >
+              Salva
+            </button>
+            <button type="button" id="form-cancel" class="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+              Annulla
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      const SUPABASE_URL = "https://mwvqbkurzugjgthurdyn.supabase.co";
+      const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_SOY_mRMn8ruVpx6ifoAnmA_e-E65kRI";
+
+      const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+      const STORAGE_BUCKET = "ricette-immagini";
+
+      /** Ricette di prova (seed cloud + fallback locale) */
+      const SEED_RECIPES = [
+        {
+          titolo: "Carbonara",
+          categoria: "Primi",
+          descrizione: "Classica romana, cremosa senza panna.",
+          ingredienti: [
+            "Spaghetti 320 g",
+            "Guanciale 150 g",
+            "Tuorli d'uovo 4 (circa 80 g)",
+            "Pecorino Romano DOP 100 g (50 g nella crema + 50 g a fine cottura)",
+            "Pepe nero in grani, q.b.",
+          ],
+          preparazione: {
+            dosi: "4 porzioni abbondanti.",
+            passi: [
+              "Taglia il guanciale a listarelle e rosolalo in padella a fuoco medio fino a quando è croccante; tieni da parte il grasso.",
+              "Grattugia il pecorino. In una ciotola amalgama tuorli, metà del pecorino e un po' di acqua di cottura fredda per ottenere una crema densa.",
+              "Cuoci la pasta in acqua salata bolente. Scolala al dente conservando abbondante acqua di cottura.",
+              "Fuori dal fuoco, mescola pasta con il grasso del guanciale, aggiungi la crema di tuorli mescolando velocemente e sostenendo con acqua di cottura fino a cremosità.",
+              "Completa con guanciale croccante, pecorino rimanente e pepe macinato al momento.",
+            ],
+          },
+        },
+        {
+          titolo: "Pasta al Pomodoro",
+          categoria: "Primi",
+          descrizione: "Semplice, profumata, sempre buona.",
+          ingredienti: [
+            "Pasta corta o lunga 320 g",
+            "Passata di pomodoro 600 g (o pelati schiacciati)",
+            "Aglio 2 spicchi",
+            "Olio extravergine d'oliva 3 cucchiai",
+            "Basilico fresco, q.b.",
+            "Sale fino, q.b.",
+          ],
+          preparazione: {
+            dosi: "4 porzioni.",
+            passi: [
+              "In una padella larga scalda l'olio con l'aglio leggermente schiacciato fino a profumare, poi rimuovi l'aglio se preferisci.",
+              "Versa la passata, sale e fai cuocere a fuoco medio-basso 12-15 minuti, mescolando, fino a restringersi leggermente.",
+              "Cuoci la pasta in abbondante acqua salata, scola al dente e trasferisci nella salsa con un mestolo d'acqua di cottura.",
+              "Manteca a fuoco vivo per 1 minuto unendo basilico a pezzetti.",
+              "Impiatta e completa con olio a crudo e basilico.",
+            ],
+          },
+        },
+        {
+          titolo: "Tiramisù",
+          categoria: "Dolci",
+          descrizione: "Dolce al cucchiaio, equilibrato e morbido.",
+          ingredienti: [
+            "Mascarpone 500 g",
+            "Uova fresche medie 4 (solo tuorli per la versione classica cruda)",
+            "Zucchero 100 g",
+            "Caffè espresso freddo 300 ml",
+            "Savoiardi circa 300 g",
+            "Cacao amaro in polvere, q.b.",
+          ],
+          preparazione: {
+            dosi: "Stampo rettangolare 22×30 cm, circa 10-12 porzioni.",
+            passi: [
+              "Monta i tuorli con lo zucchero fino a ottenere un composto chiaro e spumoso.",
+              "Aggiungi il mascarpone a cucchiaiate mescolando dal basso verso l'alto fino a crema omogenea.",
+              "Immergi brevemente i savoiardi nel caffè freddo (non inzuppare troppo) e disponi uno strato nello stampo.",
+              "Spalma metà della crema, poi un secondo strato di savoiardi e il resto della crema.",
+              "Copri e riponi in frigo almeno 4 ore (meglio una notte). Spolvera con cacao prima di servire.",
+            ],
+          },
+        },
+        {
+          titolo: "Lasagne",
+          categoria: "Primi",
+          descrizione: "Strati di pasta, ragù e besciamella.",
+          ingredienti: [
+            "Lasagne fresche o secche precotte 500 g",
+            "Ragù di carne pronto 800 g (o homemade)",
+            "Besciamella 600 ml",
+            "Parmigiano Reggiano grattugiato 100 g",
+            "Burro per lo stampo, q.b.",
+          ],
+          preparazione: {
+            dosi: "Stampo 25×35 cm, circa 8-10 porzioni.",
+            passi: [
+              "Imburra lo stampo e spargi un sottile strato di ragù sul fondo.",
+              "Alterna strati di pasta, ragù, besciamella e parmigiano fino a esaurire gli ingredienti (ultimo strato: ragù + besciamella + parmigiano).",
+              "Copri con carta stagnola e cuoci in forno preriscaldato a 180 °C per circa 25 minuti.",
+              "Rimuovi la stagnola e gratina altri 10-15 minuti fino a superficie dorata.",
+              "Lascia riposare 10 minuti prima di porzionare.",
+            ],
+          },
+        },
+        {
+          titolo: "Saltimbocca alla Romana",
+          categoria: "Secondi",
+          descrizione: "Scaloppine avvolte in prosciutto e salvia.",
+          ingredienti: [
+            "Fettine di vitello magro 8 (circa 600 g)",
+            "Prosciutto crudo dolce 8 fette sottili",
+            "Foglie di salvia fresca 8",
+            "Burro 40 g",
+            "Vino bianco secco 100 ml",
+            "Olio extravergine d'oliva 2 cucchiai",
+            "Sale e pepe, q.b.",
+          ],
+          preparazione: {
+            dosi: "4 porzioni (2 saltimbocca a persona).",
+            passi: [
+              "Batti leggermente le fettine, condiscile e copri ognuna con una fetta di prosciutto e una foglia di salvia; fissa con uno stuzzicadenti.",
+              "Scalda olio e metà del burro in padella larga e rosola le fettine prosciutto verso il basso per circa 1 minuto per lato fino a doratura.",
+              "Sfuma con il vino bianco, raschia il fondo e fai ridurre per 1-2 minuti.",
+              "Fuori dal fuoco, monta con il burro rimanente e servi subito con il fondo di cottura.",
+            ],
+          },
+        },
+        {
+          titolo: "Patate al Forno",
+          categoria: "Contorno",
+          descrizione: "Croccanti fuori, morbide dentro.",
+          ingredienti: [
+            "Patate a pasta gialla 1 kg",
+            "Olio extravergine d'oliva 4 cucchiai",
+            "Rosmarino fresco 3 rametti",
+            "Aglio 2 spicchi (facoltativo, schiacciati con buccia)",
+            "Sale grosso, q.b.",
+            "Pepe nero, q.b.",
+          ],
+          preparazione: {
+            dosi: "4-6 contorni abbondanti.",
+            passi: [
+              "Lava le patate e tagliale a spicchi regolari; asciugale bene.",
+              "Condiscile in una terrina con olio, sale, pepe e aghi di rosmarino sminuzzati.",
+              "Disponi su placca da forno foderata, aggiungi l'aglio e cuoci in forno ventilato a 200 °C per 35-45 minuti mescolando a metà cottura.",
+              "Gratina gli ultimi 5 minuti se desideri una crosta più croccante.",
+            ],
+          },
+        },
+      ];
+
+      const CATEGORY_ORDER = ["Primi", "Secondi", "Contorno", "Dolci"];
+      const SECTION_TITLES = {
+        Primi: "I Nostri Primi",
+        Secondi: "I Secondi",
+        Contorno: "I Contorni",
+        Dolci: "Dolci",
+      };
+
+      let recipes = [];
+      let cloudConnected = false;
+      let viewingRecipeId = null;
+      let viewingRecipe = null;
+      let realtimeChannel = null;
+      let formPendingImageUrl = "";
+      let formPendingImageFile = null;
+      let modalEditPendingImageUrl = "";
+      let modalEditPendingImageFile = null;
+
+      const sectionsRoot = document.getElementById("recipe-sections");
+      const emptyState = document.getElementById("empty-state");
+      const searchInput = document.getElementById("ingredient-search");
+      const loadingOverlay = document.getElementById("loading-overlay");
+      const cloudBanner = document.getElementById("cloud-banner");
+      const btnAddRecipe = document.getElementById("btn-add-recipe");
+      const modal = document.getElementById("recipe-modal");
+      const backdrop = document.getElementById("modal-backdrop");
+      const btnClose = document.getElementById("modal-close");
+      const btnModalEdit = document.getElementById("btn-modal-edit");
+      const btnModalDelete = document.getElementById("btn-modal-delete");
+      const elTitle = document.getElementById("modal-title");
+      const elIngredients = document.getElementById("modal-ingredients");
+      const elDoses = document.getElementById("modal-doses");
+      const elSteps = document.getElementById("modal-steps");
+      const elMancanti = document.getElementById("modal-mancanti");
+      const modalImageWrap = document.getElementById("modal-image-wrap");
+      const modalViewPanel = document.getElementById("modal-view-panel");
+      const modalEditForm = document.getElementById("modal-edit-form");
+      const modalViewFooter = document.getElementById("modal-view-footer");
+      const modalEditCancel = document.getElementById("modal-edit-cancel");
+      const modalEditError = document.getElementById("modal-edit-error");
+      const modalEditId = document.getElementById("modal-edit-id");
+      const modalEditTitolo = document.getElementById("modal-edit-titolo");
+      const modalEditCategoria = document.getElementById("modal-edit-categoria");
+      const modalEditDescrizione = document.getElementById("modal-edit-descrizione");
+      const modalEditIngredienti = document.getElementById("modal-edit-ingredienti");
+      const modalEditPreparazione = document.getElementById("modal-edit-preparazione");
+      const modalEditImageFile = document.getElementById("modal-edit-image-file");
+      const modalEditUploadStatus = document.getElementById("modal-edit-upload-status");
+      const modalEditImagePreview = document.getElementById("modal-edit-image-preview");
+      const modalEditScroll = document.getElementById("modal-edit-scroll");
+      const btnModalEditPickPhoto = document.getElementById("btn-modal-edit-pick-photo");
+      const modalEditSuccess = document.getElementById("modal-edit-success");
+      const formSuccess = document.getElementById("form-success");
+      const appToast = document.getElementById("app-toast");
+
+      const formModal = document.getElementById("form-modal");
+      const formBackdrop = document.getElementById("form-backdrop");
+      const formClose = document.getElementById("form-close");
+      const formCancel = document.getElementById("form-cancel");
+      const recipeForm = document.getElementById("recipe-form");
+      const formModalTitle = document.getElementById("form-modal-title");
+      const formError = document.getElementById("form-error");
+      const formId = document.getElementById("form-id");
+      const formTitolo = document.getElementById("form-titolo");
+      const formCategoria = document.getElementById("form-categoria");
+      const formDescrizione = document.getElementById("form-descrizione");
+      const formIngredienti = document.getElementById("form-ingredienti");
+      const formPreparazione = document.getElementById("form-preparazione");
+      const formImmagineUrl = document.getElementById("form-immagine-url");
+      const formImageFile = document.getElementById("form-image-file");
+      const formUploadStatus = document.getElementById("form-upload-status");
+      const formImagePreview = document.getElementById("form-image-preview");
+
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      /** Risolve URL assoluto, percorso relativo o nome file locale */
+      function resolveImageUrl(url) {
+        const u = String(url || "").trim();
+        if (!u) return null;
+        if (/^https?:\/\//i.test(u)) return u;
+        if (u.startsWith("/")) return u;
+        return u.includes("/") ? u : `./${u}`;
+      }
+
+      function kitchenPlaceholderHtml(extraClass = "") {
+        return `
+          <div class="flex aspect-[4/3] w-full items-center justify-center bg-slate-100 ${extraClass}" aria-hidden="true">
+            <div class="flex flex-col items-center gap-2 text-slate-400">
+              <svg class="h-16 w-16" viewBox="0 0 64 64" fill="currentColor" aria-hidden="true">
+                <path d="M10 28c0-8 6-14 14-14 3 0 6 1 8 3 2-4 6-6 10-6 9 0 16 7 16 16v2H10v-2zm6 8h32l-2 14H18l-2-14zM8 50h48v4H8v-4z" opacity=".35"/>
+                <path d="M18 20c-6 0-10 4-10 10h40c0-6-4-10-10-10-2 0-4 1-5 2-2-3-5-4-8-4-5 0-9 3-11 7-1-2-3-3-6-3z"/>
+              </svg>
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Nessuna foto</span>
+            </div>
+          </div>
+        `;
+      }
+
+      function ensurePreviewHasImg(previewWrap) {
+        if (!previewWrap.querySelector("img")) {
+          previewWrap.innerHTML =
+            '<img alt="Anteprima foto in modifica" class="aspect-[4/3] w-full object-cover" />';
+        }
+      }
+
+      function showImagePreview(previewWrap, url) {
+        if (!previewWrap) return;
+        ensurePreviewHasImg(previewWrap);
+        const img = previewWrap.querySelector("img");
+        const resolved = url ? resolveImageUrl(url) : null;
+        if (!resolved || !img) {
+          if (!url) {
+            img.src = "";
+            previewWrap.classList.add("hidden");
+          }
+          return;
+        }
+        img.src = resolved;
+        img.onerror = () => {
+          previewWrap.classList.add("hidden");
+        };
+        previewWrap.classList.remove("hidden");
+      }
+
+      let toastHideTimer = null;
+
+      function formatSupabaseError(err) {
+        if (!err) return "Errore sconosciuto.";
+        const parts = [];
+        if (err.message) parts.push(err.message);
+        if (err.details) parts.push(String(err.details));
+        if (err.hint) parts.push(String(err.hint));
+        if (err.code) parts.push(`Codice ${err.code}`);
+        return parts.join(" — ") || "Operazione non riuscita.";
+      }
+
+      function showToast(message, type = "success") {
+        appToast.textContent = message;
+        appToast.classList.remove(
+          "hidden",
+          "bg-emerald-600",
+          "text-white",
+          "ring-emerald-700/30",
+          "bg-rose-600",
+          "ring-rose-700/30"
+        );
+        if (type === "error") {
+          appToast.classList.add("bg-rose-600", "text-white", "ring-rose-700/30");
+        } else {
+          appToast.classList.add("bg-emerald-600", "text-white", "ring-emerald-700/30");
+        }
+        clearTimeout(toastHideTimer);
+        toastHideTimer = setTimeout(() => appToast.classList.add("hidden"), 4500);
+      }
+
+      function showInlineMessage(el, message, type = "error") {
+        if (!el) return;
+        if (!message) {
+          el.classList.add("hidden");
+          el.textContent = "";
+          return;
+        }
+        el.textContent = message;
+        el.classList.remove("hidden");
+        if (type === "success") {
+          el.classList.remove("border-rose-200", "bg-rose-50", "text-rose-800");
+          el.classList.add("border-emerald-200", "bg-emerald-50", "text-emerald-900");
+        } else {
+          el.classList.remove("border-emerald-200", "bg-emerald-50", "text-emerald-900");
+          el.classList.add("border-rose-200", "bg-rose-50", "text-rose-800");
+        }
+      }
+
+      function setUploadStatus(el, message, isError = false) {
+        if (!el) return;
+        if (!message) {
+          el.classList.add("hidden");
+          el.textContent = "";
+          return;
+        }
+        el.textContent = message;
+        el.classList.remove("hidden", "text-orange-700", "text-rose-700", "text-emerald-700");
+        el.classList.add(isError ? "text-rose-700" : message.includes("✓") ? "text-emerald-700" : "text-orange-700");
+      }
+
+      function sanitizeFileName(name) {
+        return String(name || "immagine")
+          .toLowerCase()
+          .replace(/[^a-z0-9.-]+/g, "-")
+          .replace(/^-|-$/g, "");
+      }
+
+      async function uploadImageToStorage(file) {
+        const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+        const path = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}-${sanitizeFileName(file.name.replace(/\.[^.]+$/, ""))}.${ext}`;
+        const { data: uploadData, error: uploadError } = await supabaseClient.storage
+          .from(STORAGE_BUCKET)
+          .upload(path, file, {
+            cacheControl: "3600",
+            upsert: false,
+            contentType: file.type || `image/${ext}`,
+          });
+        if (uploadError) throw new Error(formatSupabaseError(uploadError));
+        const { data: urlData } = supabaseClient.storage.from(STORAGE_BUCKET).getPublicUrl(uploadData?.path || path);
+        if (!urlData?.publicUrl) throw new Error("URL pubblico immagine non disponibile. Verifica che il bucket ricette-immagini sia pubblico.");
+        return urlData.publicUrl;
+      }
+
+      async function insertRecipeRow(row) {
+        const { data, error } = await supabaseClient.from("ricette").insert(row).select("id").single();
+        if (error) throw new Error(formatSupabaseError(error));
+        return data;
+      }
+
+      async function updateRecipeRow(id, row) {
+        const { data, error } = await supabaseClient.from("ricette").update(row).eq("id", id).select("id").single();
+        if (error) throw new Error(formatSupabaseError(error));
+        return data;
+      }
+
+      async function handleImageFileSelected(file, { statusEl, previewEl, onUrlReady }) {
+        if (!file || !file.type.startsWith("image/")) {
+          setUploadStatus(statusEl, "Seleziona un file immagine valido.", true);
+          return;
+        }
+        setUploadStatus(statusEl, "Caricamento su Supabase Storage…");
+        try {
+          const publicUrl = await uploadImageToStorage(file);
+          onUrlReady(publicUrl, file);
+          showImagePreview(previewEl, publicUrl);
+          setUploadStatus(statusEl, "✓ Immagine caricata sul cloud.");
+        } catch (err) {
+          console.error(err);
+          setUploadStatus(statusEl, formatSupabaseError(err), true);
+        }
+      }
+
+      function resetFormImageState() {
+        formPendingImageUrl = "";
+        formPendingImageFile = null;
+        formImmagineUrl.value = "";
+        formImageFile.value = "";
+        setUploadStatus(formUploadStatus, "");
+        formImagePreview.classList.add("hidden");
+      }
+
+      function resetModalEditImageState(keepUrl = "") {
+        modalEditPendingImageUrl = keepUrl || "";
+        modalEditPendingImageFile = null;
+        modalEditImageFile.value = "";
+        setUploadStatus(modalEditUploadStatus, "");
+        if (keepUrl) {
+          ensurePreviewHasImg(modalEditImagePreview);
+          showImagePreview(modalEditImagePreview, keepUrl);
+          setUploadStatus(modalEditUploadStatus, "Foto attuale. Scegli un file per sostituirla.");
+        } else {
+          modalEditImagePreview.innerHTML = `<div class="flex aspect-[4/3] items-center justify-center bg-slate-100 text-slate-400"><span class="text-xs font-semibold uppercase tracking-wider">Nessuna foto</span></div>`;
+          modalEditImagePreview.classList.remove("hidden");
+          setUploadStatus(modalEditUploadStatus, "Scegli un’immagine da caricare sul cloud.");
+        }
+      }
+
+      function recipeImageHtml(recipe) {
+        const src = resolveImageUrl(recipe.immagine_url);
+        const alt = escapeHtml(recipe.title);
+        if (src) {
+          return `<div class="relative aspect-[4/3] w-full overflow-hidden rounded-t-2xl bg-orange-50">
+            <img src="${escapeHtml(src)}" alt="${alt}" class="h-full w-full object-cover" loading="lazy" onerror="this.classList.add('hidden');this.nextElementSibling?.classList.remove('hidden')" />
+            <div class="hidden h-full w-full">${kitchenPlaceholderHtml()}</div>
+          </div>`;
+        }
+        return kitchenPlaceholderHtml("rounded-t-2xl");
+      }
+
+      function parsePreparazione(raw) {
+        if (!raw) return { dosi: "", passi: [] };
+        if (typeof raw === "string") {
+          try {
+            return parsePreparazione(JSON.parse(raw));
+          } catch {
+            return { dosi: "", passi: raw ? [raw] : [] };
+          }
+        }
+        return {
+          dosi: raw.dosi || raw.dose || "",
+          passi: raw.passi || raw.steps || [],
+        };
+      }
+
+      function parseIngredienti(raw) {
+        if (!raw) return [];
+        if (Array.isArray(raw)) return raw.map(String);
+        if (typeof raw === "string") {
+          try {
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed.map(String) : [raw];
+          } catch {
+            return raw.split("\n").map((s) => s.trim()).filter(Boolean);
+          }
+        }
+        return [];
+      }
+
+      function rowToRecipe(row) {
+        const prep = parsePreparazione(row.preparazione);
+        return {
+          id: row.id,
+          title: row.titolo,
+          categoria: row.categoria,
+          tagline: row.descrizione || "",
+          ingredients: parseIngredienti(row.ingredienti),
+          doses: prep.dosi,
+          steps: Array.isArray(prep.passi) ? prep.passi.map(String) : [],
+          immagine_url: row.immagine_url || "",
+          created_at: row.created_at,
+        };
+      }
+
+      function recipeToRow(recipe) {
+        return {
+          titolo: recipe.title,
+          categoria: recipe.categoria,
+          descrizione: recipe.tagline,
+          ingredienti: recipe.ingredients,
+          preparazione: { dosi: recipe.doses || "", passi: recipe.steps || [] },
+          immagine_url: (recipe.immagine_url || "").trim(),
+        };
+      }
+
+      function seedToRow(seed) {
+        return {
+          titolo: seed.titolo,
+          categoria: seed.categoria,
+          descrizione: seed.descrizione,
+          ingredienti: seed.ingredienti,
+          preparazione: seed.preparazione,
+          immagine_url: seed.immagine_url || "",
+        };
+      }
+
+      function seedToRecipe(seed, index) {
+        const prep = parsePreparazione(seed.preparazione);
+        const slug = seed.titolo.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        return {
+          id: `preview-${slug || index}`,
+          title: seed.titolo,
+          categoria: seed.categoria,
+          tagline: seed.descrizione,
+          ingredients: seed.ingredienti,
+          doses: prep.dosi,
+          steps: prep.passi,
+          immagine_url: seed.immagine_url || "",
+        };
+      }
+
+      function setCloudBanner(type, message) {
+        cloudBanner.classList.remove("hidden", "border-amber-200", "bg-amber-50", "text-amber-950", "border-emerald-200", "bg-emerald-50", "text-emerald-900", "border-rose-200", "bg-rose-50", "text-rose-900");
+        if (type === "ok") {
+          cloudBanner.classList.add("border-emerald-200", "bg-emerald-50", "text-emerald-900");
+        } else if (type === "warn") {
+          cloudBanner.classList.add("border-amber-200", "bg-amber-50", "text-amber-950");
+        } else {
+          cloudBanner.classList.add("border-rose-200", "bg-rose-50", "text-rose-900");
+        }
+        cloudBanner.innerHTML = message;
+      }
+
+      function setLoading(on) {
+        loadingOverlay.classList.toggle("hidden", !on);
+      }
+
+      function updateCrudAvailability() {
+        const enabled = cloudConnected;
+        btnAddRecipe.disabled = !enabled;
+        modalViewFooter.classList.toggle("hidden", !enabled);
+      }
+
+      function showModalViewMode() {
+        modalViewPanel.classList.remove("hidden");
+        modalViewPanel.classList.add("flex");
+        modalEditForm.classList.add("hidden");
+        modalEditForm.classList.remove("flex");
+        modalImageWrap.classList.remove("hidden");
+      }
+
+      function showModalEditMode() {
+        modalViewPanel.classList.add("hidden");
+        modalViewPanel.classList.remove("flex");
+        modalEditForm.classList.remove("hidden");
+        modalEditForm.classList.add("flex");
+        modalImageWrap.classList.remove("hidden");
+      }
+
+      async function fetchAllRecipes() {
+        const { data, error } = await supabaseClient
+          .from("ricette")
+          .select("id, created_at, titolo, categoria, descrizione, ingredienti, preparazione, immagine_url")
+          .order("created_at", { ascending: true });
+        if (error) throw error;
+        return (data || []).map(rowToRecipe);
+      }
+
+      async function seedCloudIfEmpty() {
+        const rows = SEED_RECIPES.map(seedToRow);
+        const { error } = await supabaseClient.from("ricette").insert(rows);
+        if (error) throw error;
+        return fetchAllRecipes();
+      }
+
+      function subscribeRealtime() {
+        if (realtimeChannel) {
+          supabaseClient.removeChannel(realtimeChannel);
+        }
+        realtimeChannel = supabaseClient
+          .channel("ricette-live")
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "ricette" },
+            () => {
+              refreshFromCloud({ silent: true });
+            }
+          )
+          .subscribe();
+      }
+
+      async function refreshFromCloud({ silent = false } = {}) {
+        if (!silent) setLoading(true);
+        try {
+          recipes = await fetchAllRecipes();
+          cloudConnected = true;
+          setCloudBanner(
+            "ok",
+            `<strong>Cloud attivo.</strong> ${recipes.length} ricette sincronizzate in tempo reale con Supabase.`
+          );
+          renderRecipeSections();
+        } catch (err) {
+          console.error(err);
+          if (!silent) {
+            setCloudBanner(
+              "error",
+              `<strong>Errore sincronizzazione.</strong> ${escapeHtml(err.message || "Impossibile leggere il cloud.")}`
+            );
+          }
+        } finally {
+          if (!silent) setLoading(false);
+          updateCrudAvailability();
+        }
+      }
+
+      async function initApp() {
+        setLoading(true);
+        updateCrudAvailability();
+
+        try {
+          recipes = await fetchAllRecipes();
+
+          if (recipes.length === 0) {
+            setCloudBanner(
+              "warn",
+              `<strong>Tabella vuota.</strong> Sto inserendo le ricette di prova sul cloud…`
+            );
+            try {
+              recipes = await seedCloudIfEmpty();
+              setCloudBanner(
+                "ok",
+                `<strong>Cloud configurato.</strong> Inserite ${recipes.length} ricette di prova su Supabase. Da ora tutti le vedono in tempo reale.`
+              );
+            } catch (seedErr) {
+              console.error(seedErr);
+              recipes = SEED_RECIPES.map((s, i) => seedToRecipe(s, i));
+              cloudConnected = false;
+              setCloudBanner(
+                "warn",
+                `<strong>Modalità anteprima locale.</strong> La tabella esiste ma il seed non è riuscito (controlla RLS/politiche). Esegui <code class="rounded bg-amber-100 px-1">supabase-setup.sql</code> nel SQL Editor di Supabase, poi ricarica. Dettaglio: ${escapeHtml(seedErr.message || "")}`
+              );
+            }
+          } else {
+            cloudConnected = true;
+            setCloudBanner(
+              "ok",
+              `<strong>Cloud attivo.</strong> ${recipes.length} ricette caricate da Supabase.`
+            );
+          }
+
+          if (cloudConnected) {
+            subscribeRealtime();
+          }
+        } catch (err) {
+          console.error(err);
+          recipes = SEED_RECIPES.map((s, i) => seedToRecipe(s, i));
+          cloudConnected = false;
+          const hint =
+            err.code === "PGRST205" || /relation|does not exist|ricette/i.test(err.message || "")
+              ? " Crea la tabella con il file <strong>supabase-setup.sql</strong> (SQL Editor → Run), poi ricarica la pagina."
+              : "";
+          setCloudBanner(
+            "warn",
+            `<strong>Cloud non raggiungibile.</strong> Mostro le ricette di prova in locale.${hint} Errore: ${escapeHtml(err.message || "sconosciuto")}`
+          );
+        }
+
+        renderRecipeSections();
+        setLoading(false);
+        updateCrudAvailability();
+      }
+
+      function normalizeForSearch(str) {
+        return String(str)
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+      }
+
+      function parseSearchTermPairs(raw) {
+        return String(raw || "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .map((original) => ({ original, norm: normalizeForSearch(original) }));
+      }
+
+      function ingredientsBlob(recipe) {
+        return recipe.ingredients.map((line) => normalizeForSearch(line)).join(" | ");
+      }
+
+      function collectStems(termNorm) {
+        const t = termNorm;
+        const stems = new Set();
+        if (!t) return [];
+        stems.add(t);
+        if (t.length > 4) stems.add(t.slice(0, -1));
+        if (t.length > 5) stems.add(t.slice(0, -2));
+        if (t.length > 6) stems.add(t.slice(0, -3));
+        return [...stems].filter((s) => s.length >= 3);
+      }
+
+      function wordsFromBlob(blobNorm) {
+        return blobNorm.split(/[^a-z0-9]+/).filter((w) => w.length >= 2);
+      }
+
+      function flexibleTermMatchesBlob(termNorm, blobNorm) {
+        if (!termNorm) return true;
+        const stems = collectStems(termNorm);
+        for (const stem of stems) {
+          if (blobNorm.includes(stem)) return true;
+        }
+        const words = wordsFromBlob(blobNorm);
+        for (const w of words) {
+          if (w.includes(termNorm) || termNorm.includes(w)) {
+            if (Math.min(w.length, termNorm.length) >= 3) return true;
+          }
+          for (const stem of stems) {
+            if (stem.length < 3) continue;
+            if (w.startsWith(stem) || stem.startsWith(w)) {
+              const minl = Math.min(w.length, stem.length);
+              if (minl >= 4) return true;
+              if (minl >= 3 && Math.abs(w.length - stem.length) <= 2) return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      function recipeMatchesAllTerms(recipe, pairs) {
+        if (!pairs.length) return true;
+        const blob = ingredientsBlob(recipe);
+        return pairs.every((p) => flexibleTermMatchesBlob(p.norm, blob));
+      }
+
+      function termMatchesRecipe(recipe, termNorm) {
+        if (!termNorm) return true;
+        return recipe.ingredients.some((line) =>
+          flexibleTermMatchesBlob(termNorm, normalizeForSearch(line))
+        );
+      }
+
+      function lineMatchesAnyTerm(line, pairs) {
+        if (!pairs.length) return false;
+        const lineNorm = normalizeForSearch(line);
+        return pairs.some((p) => flexibleTermMatchesBlob(p.norm, lineNorm));
+      }
+
+      function getFilteredRecipes() {
+        const pairs = parseSearchTermPairs(searchInput.value);
+        return recipes.filter((r) => recipeMatchesAllTerms(r, pairs));
+      }
+
+      function findRecipe(id) {
+        return recipes.find((r) => String(r.id) === String(id));
+      }
+
+      function cardHtml(r) {
+        const title = escapeHtml(r.title);
+        const tag = escapeHtml(r.tagline);
+        const rid = escapeHtml(String(r.id));
+        const editBtn = cloudConnected
+          ? `<button type="button" class="card-edit rounded-lg px-2 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-50" data-recipe-id="${rid}">Modifica</button>`
+          : "";
+        const delBtn = cloudConnected
+          ? `<button type="button" class="card-delete rounded-lg px-2 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50" data-recipe-id="${rid}">Elimina</button>`
+          : "";
+        const thumb = recipeImageHtml(r);
+        return `
+          <article class="recipe-card-wrap flex flex-col overflow-hidden rounded-2xl border border-orange-100/90 bg-white/90 shadow-sm shadow-orange-900/5 ring-1 ring-slate-900/5 transition hover:-translate-y-0.5 hover:shadow-md" role="listitem">
+            <button type="button" class="recipe-card-view group flex flex-1 flex-col text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500" data-recipe-id="${rid}">
+              ${thumb}
+              <span class="flex flex-1 flex-col p-5">
+                <span class="font-display text-lg font-bold text-slate-900 group-hover:text-orange-700">${title}</span>
+                <span class="mt-2 text-sm text-slate-600 leading-snug">${tag}</span>
+                <span class="mt-4 inline-flex items-center text-xs font-semibold text-orange-600">
+                  Apri dettaglio
+                  <svg class="ml-1 h-4 w-4 transition group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </span>
+              </span>
+            </button>
+            ${cloudConnected ? `<div class="flex gap-2 border-t border-orange-50 px-4 py-3">${editBtn}${delBtn}</div>` : ""}
+          </article>
+        `;
+      }
+
+      function renderRecipeSections() {
+        const openCategories = new Set();
+        sectionsRoot.querySelectorAll(".accordion-section.is-open").forEach((sec) => {
+          const c = sec.getAttribute("data-category");
+          if (c) openCategories.add(c);
+        });
+
+        const filtered = getFilteredRecipes();
+        const pairs = parseSearchTermPairs(searchInput.value);
+
+        if (pairs.length > 0 && filtered.length === 0) {
+          emptyState.classList.remove("hidden");
+          sectionsRoot.innerHTML = "";
+          return;
+        }
+
+        emptyState.classList.add("hidden");
+
+        const htmlParts = [];
+        for (const cat of CATEGORY_ORDER) {
+          const inCategory = filtered.filter((r) => r.categoria === cat);
+          if (!inCategory.length) continue;
+          const heading = escapeHtml(SECTION_TITLES[cat] || cat);
+          const catId = cat.replace(/\s+/g, "-");
+          const countLabel = inCategory.length === 1 ? "1 ricetta" : `${inCategory.length} ricette`;
+          htmlParts.push(`
+            <section class="accordion-section overflow-hidden rounded-2xl border border-orange-100/80 bg-white/50 shadow-sm" data-category="${escapeHtml(cat)}">
+              <button type="button" class="accordion-trigger flex w-full items-center gap-3 px-4 py-4 text-left transition hover:bg-orange-50/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-400" aria-expanded="false" aria-controls="accordion-panel-${catId}">
+                <span class="chevron-icon inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-100/90 text-orange-800" aria-hidden="true">
+                  <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </span>
+                <span class="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                  <span role="heading" aria-level="3" id="accordion-heading-${catId}" class="font-display text-xl font-bold text-slate-900 sm:text-2xl">${heading}</span>
+                  <span class="shrink-0 text-sm font-medium text-slate-500">${countLabel}</span>
+                </span>
+              </button>
+              <div id="accordion-panel-${catId}" class="accordion-panel" role="region" aria-labelledby="accordion-heading-${catId}">
+                <div class="accordion-inner">
+                  <div class="grid gap-6 px-4 pb-6 pt-0 sm:grid-cols-2 lg:grid-cols-3" role="list">
+                    ${inCategory.map(cardHtml).join("")}
+                  </div>
+                </div>
+              </div>
+            </section>
+          `);
+        }
+
+        sectionsRoot.innerHTML = htmlParts.join("") || "";
+
+        sectionsRoot.querySelectorAll(".accordion-section").forEach((sec) => {
+          const c = sec.getAttribute("data-category");
+          const btn = sec.querySelector(".accordion-trigger");
+          if (openCategories.has(c)) {
+            sec.classList.add("is-open");
+            if (btn) btn.setAttribute("aria-expanded", "true");
+          } else {
+            sec.classList.remove("is-open");
+            if (btn) btn.setAttribute("aria-expanded", "false");
+          }
+        });
+      }
+
+      function renderModalImage(recipe) {
+        const src = resolveImageUrl(recipe.immagine_url);
+        if (src) {
+          modalImageWrap.innerHTML = `<img src="${escapeHtml(src)}" alt="${escapeHtml(recipe.title)}" class="aspect-[4/3] w-full object-cover" />`;
+          const img = modalImageWrap.querySelector("img");
+          img.onerror = () => {
+            modalImageWrap.innerHTML = kitchenPlaceholderHtml();
+          };
+        } else {
+          modalImageWrap.innerHTML = kitchenPlaceholderHtml();
+        }
+      }
+
+      function openViewModal(recipe) {
+        viewingRecipeId = recipe.id;
+        viewingRecipe = recipe;
+        showModalViewMode();
+        const pairs = parseSearchTermPairs(searchInput.value);
+
+        renderModalImage(recipe);
+        elTitle.textContent = recipe.title;
+        elIngredients.innerHTML = recipe.ingredients
+          .map((line) => {
+            const safe = escapeHtml(line);
+            if (pairs.length && lineMatchesAnyTerm(line, pairs)) {
+              return `<li><strong class="font-semibold text-slate-900">${safe}</strong></li>`;
+            }
+            return `<li>${safe}</li>`;
+          })
+          .join("");
+        elDoses.textContent = recipe.doses || "—";
+        elSteps.innerHTML = (recipe.steps || []).map((s) => `<li>${escapeHtml(s)}</li>`).join("");
+
+        const missing = pairs.filter((p) => !termMatchesRecipe(recipe, p.norm));
+        if (missing.length) {
+          const list = missing.map((p) => escapeHtml(p.original)).join(", ");
+          elMancanti.innerHTML = `Mancanti: <strong class="font-semibold">${list}</strong>`;
+          elMancanti.classList.remove("hidden");
+        } else {
+          elMancanti.textContent = "";
+          elMancanti.classList.add("hidden");
+        }
+
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        modal.setAttribute("aria-hidden", "false");
+        document.body.classList.add("overflow-hidden");
+      }
+
+      function closeViewModal() {
+        viewingRecipeId = null;
+        viewingRecipe = null;
+        showModalViewMode();
+        elMancanti.textContent = "";
+        elMancanti.classList.add("hidden");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+        modal.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("overflow-hidden");
+      }
+
+      function openModalEditMode(recipe) {
+        if (!cloudConnected || !recipe) return;
+        showInlineMessage(modalEditError, "");
+        showInlineMessage(modalEditSuccess, "");
+        modalEditId.value = recipe.id;
+        modalEditTitolo.value = recipe.title;
+        modalEditCategoria.value = recipe.categoria;
+        modalEditDescrizione.value = recipe.tagline;
+        modalEditIngredienti.value = recipe.ingredients.join(", ");
+        modalEditPreparazione.value = (recipe.steps || []).join("\n");
+        resetModalEditImageState(recipe.immagine_url || "");
+        elTitle.textContent = "Modifica: " + recipe.title;
+        showModalEditMode();
+        renderModalImage({ ...recipe, immagine_url: recipe.immagine_url || "" });
+        modalEditScroll?.scrollTo({ top: 0, behavior: "smooth" });
+        setTimeout(() => modalEditTitolo.focus(), 100);
+      }
+
+      function openFormModal() {
+        if (!cloudConnected) return;
+        showInlineMessage(formError, "");
+        showInlineMessage(formSuccess, "");
+        formModalTitle.textContent = "Nuova Ricetta";
+        formId.value = "";
+        recipeForm.reset();
+        formCategoria.value = "Primi";
+        resetFormImageState();
+
+        formModal.classList.remove("hidden");
+        formModal.classList.add("flex");
+        formModal.setAttribute("aria-hidden", "false");
+        document.body.classList.add("overflow-hidden");
+        formTitolo.focus();
+      }
+
+      function closeFormModal() {
+        formModal.classList.add("hidden");
+        formModal.classList.remove("flex");
+        formModal.setAttribute("aria-hidden", "true");
+        if (!modal.classList.contains("flex")) {
+          document.body.classList.remove("overflow-hidden");
+        }
+      }
+
+      function linesFromTextarea(el) {
+        return String(el.value || "")
+          .split("\n")
+          .map((s) => s.trim())
+          .filter(Boolean);
+      }
+
+      function commaListFromInput(el) {
+        return String(el.value || "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+      }
+
+      async function resolveImageUrlForSave({ pendingUrl, pendingFile, existingUrl, statusEl }) {
+        if (pendingUrl) return pendingUrl;
+        if (pendingFile) {
+          setUploadStatus(statusEl, "Caricamento immagine…");
+          const url = await uploadImageToStorage(pendingFile);
+          return url;
+        }
+        return (existingUrl || "").trim();
+      }
+
+      async function saveRecipeFromForm(e) {
+        e.preventDefault();
+        if (!cloudConnected) return;
+
+        showInlineMessage(formError, "");
+        showInlineMessage(formSuccess, "");
+        const payload = {
+          title: formTitolo.value.trim(),
+          categoria: formCategoria.value,
+          tagline: formDescrizione.value.trim(),
+          doses: "",
+          ingredients: commaListFromInput(formIngredienti),
+          steps: linesFromTextarea(formPreparazione),
+          immagine_url: "",
+        };
+
+        if (!payload.title || !payload.ingredients.length || !payload.steps.length) {
+          showInlineMessage(formError, "Compila titolo, almeno un ingrediente e almeno un passo di preparazione.");
+          return;
+        }
+
+        setLoading(true);
+        try {
+          payload.immagine_url = await resolveImageUrlForSave({
+            pendingUrl: formPendingImageUrl,
+            pendingFile: formPendingImageFile,
+            existingUrl: formImmagineUrl.value,
+            statusEl: formUploadStatus,
+          });
+          const row = recipeToRow(payload);
+          await insertRecipeRow(row);
+          showToast("Ricetta salvata con successo!");
+          closeFormModal();
+          closeViewModal();
+          resetFormImageState();
+          await refreshFromCloud({ silent: true });
+        } catch (err) {
+          console.error(err);
+          showInlineMessage(formError, formatSupabaseError(err));
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      async function saveRecipeFromModalEdit(e) {
+        e.preventDefault();
+        if (!cloudConnected) return;
+
+        showInlineMessage(modalEditError, "");
+        showInlineMessage(modalEditSuccess, "");
+        const existing = findRecipe(modalEditId.value);
+        const payload = {
+          title: modalEditTitolo.value.trim(),
+          categoria: modalEditCategoria.value,
+          tagline: modalEditDescrizione.value.trim(),
+          doses: existing?.doses || "",
+          ingredients: commaListFromInput(modalEditIngredienti),
+          steps: linesFromTextarea(modalEditPreparazione),
+          immagine_url: "",
+        };
+
+        if (!payload.title || !payload.ingredients.length || !payload.steps.length) {
+          showInlineMessage(modalEditError, "Compila titolo, almeno un ingrediente e almeno un passo.");
+          return;
+        }
+
+        setLoading(true);
+        try {
+          payload.immagine_url = await resolveImageUrlForSave({
+            pendingUrl: modalEditPendingImageUrl,
+            pendingFile: modalEditPendingImageFile,
+            existingUrl: existing?.immagine_url,
+            statusEl: modalEditUploadStatus,
+          });
+          const row = recipeToRow(payload);
+          await updateRecipeRow(modalEditId.value, row);
+          showToast("Ricetta salvata con successo!");
+          showInlineMessage(modalEditSuccess, "Ricetta aggiornata sul cloud.");
+          await refreshFromCloud({ silent: true });
+          const updated = findRecipe(modalEditId.value);
+          if (updated) openViewModal(updated);
+          else closeViewModal();
+        } catch (err) {
+          console.error(err);
+          showInlineMessage(modalEditError, formatSupabaseError(err));
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      async function deleteRecipeById(id) {
+        if (!cloudConnected || !id) return;
+        if (!confirm("Sei sicuro di voler eliminare questa ricetta?")) return;
+
+        setLoading(true);
+        try {
+          const { error } = await supabaseClient.from("ricette").delete().eq("id", id);
+          if (error) throw new Error(formatSupabaseError(error));
+          showToast("Ricetta eliminata.");
+          closeViewModal();
+          await refreshFromCloud({ silent: true });
+        } catch (err) {
+          console.error(err);
+          showToast(formatSupabaseError(err), "error");
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      sectionsRoot.addEventListener("click", (e) => {
+        const trigger = e.target.closest(".accordion-trigger");
+        if (trigger && sectionsRoot.contains(trigger)) {
+          const section = trigger.closest(".accordion-section");
+          if (!section) return;
+          const willOpen = !section.classList.contains("is-open");
+          section.classList.toggle("is-open", willOpen);
+          trigger.setAttribute("aria-expanded", String(willOpen));
+          return;
+        }
+
+        const editBtn = e.target.closest(".card-edit");
+        if (editBtn) {
+          e.stopPropagation();
+          const r = findRecipe(editBtn.getAttribute("data-recipe-id"));
+          if (r) {
+            openViewModal(r);
+            openModalEditMode(r);
+          }
+          return;
+        }
+
+        const delBtn = e.target.closest(".card-delete");
+        if (delBtn) {
+          e.stopPropagation();
+          deleteRecipeById(delBtn.getAttribute("data-recipe-id"));
+          return;
+        }
+
+        const card = e.target.closest(".recipe-card-view");
+        if (!card) return;
+        const r = findRecipe(card.getAttribute("data-recipe-id"));
+        if (r) openViewModal(r);
+      });
+
+      searchInput.addEventListener("input", renderRecipeSections);
+
+      btnAddRecipe.addEventListener("click", () => openFormModal());
+      btnClose.addEventListener("click", closeViewModal);
+      backdrop.addEventListener("click", closeViewModal);
+      btnModalEdit.addEventListener("click", () => {
+        const r = findRecipe(viewingRecipeId) || viewingRecipe;
+        if (r) openModalEditMode(r);
+      });
+      btnModalDelete.addEventListener("click", () => deleteRecipeById(viewingRecipeId));
+      modalEditCancel.addEventListener("click", () => {
+        if (viewingRecipe) openViewModal(viewingRecipe);
+        else closeViewModal();
+      });
+      modalEditForm.addEventListener("submit", saveRecipeFromModalEdit);
+
+      formImageFile.addEventListener("change", () => {
+        const file = formImageFile.files?.[0];
+        if (!file) return;
+        formPendingImageFile = file;
+        handleImageFileSelected(file, {
+          statusEl: formUploadStatus,
+          previewEl: formImagePreview,
+          onUrlReady: (url) => {
+            formPendingImageUrl = url;
+            formImmagineUrl.value = url;
+          },
+        });
+      });
+
+      function triggerModalEditFilePick() {
+        modalEditImageFile.click();
+      }
+
+      btnModalEditPickPhoto.addEventListener("click", triggerModalEditFilePick);
+
+      modalEditImageFile.addEventListener("change", () => {
+        const file = modalEditImageFile.files?.[0];
+        if (!file) return;
+        modalEditPendingImageFile = file;
+        handleImageFileSelected(file, {
+          statusEl: modalEditUploadStatus,
+          previewEl: modalEditImagePreview,
+          onUrlReady: (url) => {
+            modalEditPendingImageUrl = url;
+            modalEditPendingImageFile = null;
+            renderModalImage({ title: modalEditTitolo.value, immagine_url: url });
+          },
+        });
+      });
+
+      formClose.addEventListener("click", closeFormModal);
+      formCancel.addEventListener("click", closeFormModal);
+      formBackdrop.addEventListener("click", closeFormModal);
+      recipeForm.addEventListener("submit", saveRecipeFromForm);
+
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) closeViewModal();
+      });
+      formModal.addEventListener("click", (e) => {
+        if (e.target === formModal) closeFormModal();
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape") return;
+        if (!formModal.classList.contains("hidden")) closeFormModal();
+        else if (!modalEditForm.classList.contains("hidden") && viewingRecipe) openViewModal(viewingRecipe);
+        else if (!modal.classList.contains("hidden")) closeViewModal();
+      });
+
+      initApp();
+    </script>
+  </body>
+</html>

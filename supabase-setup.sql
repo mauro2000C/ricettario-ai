@@ -1,0 +1,71 @@
+-- Esegui questo script in Supabase: SQL Editor → New query → Run
+-- Progetto: https://mwvqbkurzugjgthurdyn.supabase.co
+
+create extension if not exists "pgcrypto";
+
+create table if not exists public.ricette (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default timezone('utc'::text, now()),
+  titolo text not null,
+  categoria text not null,
+  descrizione text not null default '',
+  ingredienti jsonb not null default '[]'::jsonb,
+  preparazione jsonb not null default '{"dosi":"","passi":[]}'::jsonb,
+  immagine_url text default ''
+);
+
+-- Se la tabella esiste già senza immagine_url, aggiungi la colonna:
+alter table public.ricette add column if not exists immagine_url text default '';
+
+comment on table public.ricette is 'Ricette condivise del ricettario smart';
+comment on column public.ricette.ingredienti is 'Array JSON di stringhe (una riga per ingrediente)';
+comment on column public.ricette.preparazione is 'Oggetto JSON: {"dosi":"...","passi":["..."]}';
+
+alter table public.ricette enable row level security;
+
+drop policy if exists "ricette_select_pubblico" on public.ricette;
+drop policy if exists "ricette_insert_pubblico" on public.ricette;
+drop policy if exists "ricette_update_pubblico" on public.ricette;
+drop policy if exists "ricette_delete_pubblico" on public.ricette;
+
+create policy "ricette_select_pubblico" on public.ricette for select using (true);
+create policy "ricette_insert_pubblico" on public.ricette for insert with check (true);
+create policy "ricette_update_pubblico" on public.ricette for update using (true) with check (true);
+create policy "ricette_delete_pubblico" on public.ricette for delete using (true);
+
+-- Realtime (aggiornamenti in tempo reale per tutti i client)
+alter table public.ricette replica identity full;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'ricette'
+  ) then
+    alter publication supabase_realtime add table public.ricette;
+  end if;
+exception
+  when duplicate_object then null;
+end $$;
+
+-- Bucket immagini ricette (pubblico per lettura URL)
+insert into storage.buckets (id, name, public)
+values ('ricette-immagini', 'ricette-immagini', true)
+on conflict (id) do update set public = true;
+
+drop policy if exists "ricette_immagini_select" on storage.objects;
+drop policy if exists "ricette_immagini_insert" on storage.objects;
+drop policy if exists "ricette_immagini_update" on storage.objects;
+drop policy if exists "ricette_immagini_delete" on storage.objects;
+
+create policy "ricette_immagini_select" on storage.objects
+  for select using (bucket_id = 'ricette-immagini');
+
+create policy "ricette_immagini_insert" on storage.objects
+  for insert with check (bucket_id = 'ricette-immagini');
+
+create policy "ricette_immagini_update" on storage.objects
+  for update using (bucket_id = 'ricette-immagini');
+
+create policy "ricette_immagini_delete" on storage.objects
+  for delete using (bucket_id = 'ricette-immagini');

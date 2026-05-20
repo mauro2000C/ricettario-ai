@@ -1,0 +1,11 @@
+# Credenziali e file locali sensibili
+pass supbase.txt
+*.env
+.env.*
+
+# Backup locali (opzionale)
+index -step2 funzionante.html
+
+# Sistema
+.DS_Store
+Thumbs.db
