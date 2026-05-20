@@ -42,7 +42,7 @@
       .accordion-section.is-open .chevron-icon {
         transform: rotate(180deg);
       }
-      .file-upload-zone:has(input:focus-visible) {
+      .btn-photo-pick:focus-visible {
         outline: 2px solid rgb(251 146 60);
         outline-offset: 2px;
       }
@@ -235,8 +235,6 @@
             </p>
         </div>
 
-        <div id="cloud-banner" class="mt-6 hidden rounded-2xl border px-4 py-3 text-sm" role="status" aria-live="polite"></div>
-
         <div class="app-search-block mt-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div class="max-w-2xl flex-1">
             <label for="ingredient-search" class="mb-2 block text-sm font-semibold text-slate-700">
@@ -375,21 +373,11 @@
               <div id="modal-edit-image-preview" class="mt-3 overflow-hidden rounded-xl border border-orange-100 bg-slate-100">
                 <img alt="Anteprima foto in modifica" class="aspect-[4/3] w-full object-cover" />
               </div>
-              <label
-                for="modal-edit-image-file"
-                class="file-upload-zone mt-3 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-orange-300 bg-white/70 px-4 py-5 transition hover:border-orange-400 hover:bg-white"
-              >
-                <input id="modal-edit-image-file" type="file" accept="image/*" class="sr-only" />
-                <svg class="mb-2 h-10 w-10 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span class="text-sm font-semibold text-orange-900">Scegli nuova foto</span>
-                <span class="mt-1 text-xs text-slate-500">JPG, PNG, WebP — upload automatico al bucket ricette-immagini</span>
-              </label>
+              <input id="modal-edit-image-file" type="file" accept="image/*" class="sr-only" />
               <button
                 type="button"
                 id="btn-modal-edit-pick-photo"
-                class="mt-3 w-full rounded-xl border border-orange-200 bg-white px-4 py-2.5 text-sm font-semibold text-orange-800 shadow-sm transition hover:bg-orange-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                class="btn-photo-pick mt-3 w-full rounded-xl border border-orange-200 bg-white px-4 py-3 text-sm font-semibold text-orange-800 shadow-sm transition hover:border-orange-300 hover:bg-orange-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
               >
                 Carica o cambia foto
               </button>
@@ -479,14 +467,14 @@
           </div>
           <div>
             <span class="mb-1 block text-sm font-semibold text-slate-700">Foto ricetta</span>
-            <label class="file-upload-zone flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-orange-200 bg-orange-50/40 px-4 py-6 transition hover:border-orange-300 hover:bg-orange-50">
-              <input id="form-image-file" type="file" accept="image/*" class="sr-only" />
-              <svg class="mb-2 h-10 w-10 text-orange-500/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span class="text-sm font-semibold text-orange-800">Scegli immagine (768×768 o 1024×768)</span>
-              <span class="mt-1 text-xs text-slate-500">Caricamento automatico su Supabase Storage</span>
-            </label>
+            <input id="form-image-file" type="file" accept="image/*" class="sr-only" />
+            <button
+              type="button"
+              id="btn-form-pick-photo"
+              class="btn-photo-pick w-full rounded-xl border border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 px-4 py-3 text-sm font-semibold text-orange-800 shadow-sm transition hover:border-orange-300 hover:from-orange-100 hover:to-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+            >
+              Aggiungi foto
+            </button>
             <p id="form-upload-status" class="mt-2 hidden text-sm font-medium text-orange-700"></p>
             <div id="form-image-preview" class="mt-3 hidden overflow-hidden rounded-xl border border-orange-100 bg-slate-100">
               <img alt="Anteprima nuova ricetta" class="aspect-[4/3] w-full object-cover" />
@@ -679,7 +667,6 @@
       const emptyState = document.getElementById("empty-state");
       const searchInput = document.getElementById("ingredient-search");
       const loadingOverlay = document.getElementById("loading-overlay");
-      const cloudBanner = document.getElementById("cloud-banner");
       const btnAddRecipe = document.getElementById("btn-add-recipe");
       const modal = document.getElementById("recipe-modal");
       const backdrop = document.getElementById("modal-backdrop");
@@ -727,6 +714,7 @@
       const formPreparazione = document.getElementById("form-preparazione");
       const formImmagineUrl = document.getElementById("form-immagine-url");
       const formImageFile = document.getElementById("form-image-file");
+      const btnFormPickPhoto = document.getElementById("btn-form-pick-photo");
       const formUploadStatus = document.getElementById("form-upload-status");
       const formImagePreview = document.getElementById("form-image-preview");
 
@@ -1018,18 +1006,6 @@
         };
       }
 
-      function setCloudBanner(type, message) {
-        cloudBanner.classList.remove("hidden", "border-amber-200", "bg-amber-50", "text-amber-950", "border-emerald-200", "bg-emerald-50", "text-emerald-900", "border-rose-200", "bg-rose-50", "text-rose-900");
-        if (type === "ok") {
-          cloudBanner.classList.add("border-emerald-200", "bg-emerald-50", "text-emerald-900");
-        } else if (type === "warn") {
-          cloudBanner.classList.add("border-amber-200", "bg-amber-50", "text-amber-950");
-        } else {
-          cloudBanner.classList.add("border-rose-200", "bg-rose-50", "text-rose-900");
-        }
-        cloudBanner.innerHTML = message;
-      }
-
       function setLoading(on) {
         loadingOverlay.classList.toggle("hidden", !on);
       }
@@ -1093,19 +1069,9 @@
         try {
           recipes = await fetchAllRecipes();
           cloudConnected = true;
-          setCloudBanner(
-            "ok",
-            `<strong>Cloud attivo.</strong> ${recipes.length} ricette sincronizzate in tempo reale con Supabase.`
-          );
           renderRecipeSections();
         } catch (err) {
-          console.error(err);
-          if (!silent) {
-            setCloudBanner(
-              "error",
-              `<strong>Errore sincronizzazione.</strong> ${escapeHtml(err.message || "Impossibile leggere il cloud.")}`
-            );
-          }
+          console.error("Errore sincronizzazione:", err);
         } finally {
           if (!silent) setLoading(false);
           updateCrudAvailability();
@@ -1113,59 +1079,33 @@
       }
 
       async function initApp() {
-        setLoading(true);
         updateCrudAvailability();
 
         try {
           recipes = await fetchAllRecipes();
 
           if (recipes.length === 0) {
-            setCloudBanner(
-              "warn",
-              `<strong>Tabella vuota.</strong> Sto inserendo le ricette di prova sul cloud…`
-            );
             try {
               recipes = await seedCloudIfEmpty();
-              setCloudBanner(
-                "ok",
-                `<strong>Cloud configurato.</strong> Inserite ${recipes.length} ricette di prova su Supabase. Da ora tutti le vedono in tempo reale.`
-              );
             } catch (seedErr) {
-              console.error(seedErr);
+              console.warn("Seed cloud non riuscito, uso ricette locali:", seedErr);
               recipes = SEED_RECIPES.map((s, i) => seedToRecipe(s, i));
               cloudConnected = false;
-              setCloudBanner(
-                "warn",
-                `<strong>Modalità anteprima locale.</strong> La tabella esiste ma il seed non è riuscito (controlla RLS/politiche). Esegui <code class="rounded bg-amber-100 px-1">supabase-setup.sql</code> nel SQL Editor di Supabase, poi ricarica. Dettaglio: ${escapeHtml(seedErr.message || "")}`
-              );
             }
           } else {
             cloudConnected = true;
-            setCloudBanner(
-              "ok",
-              `<strong>Cloud attivo.</strong> ${recipes.length} ricette caricate da Supabase.`
-            );
           }
 
           if (cloudConnected) {
             subscribeRealtime();
           }
         } catch (err) {
-          console.error(err);
+          console.warn("Cloud non raggiungibile, anteprima locale:", err);
           recipes = SEED_RECIPES.map((s, i) => seedToRecipe(s, i));
           cloudConnected = false;
-          const hint =
-            err.code === "PGRST205" || /relation|does not exist|ricette/i.test(err.message || "")
-              ? " Crea la tabella con il file <strong>supabase-setup.sql</strong> (SQL Editor → Run), poi ricarica la pagina."
-              : "";
-          setCloudBanner(
-            "warn",
-            `<strong>Cloud non raggiungibile.</strong> Mostro le ricette di prova in locale.${hint} Errore: ${escapeHtml(err.message || "sconosciuto")}`
-          );
         }
 
         renderRecipeSections();
-        setLoading(false);
         updateCrudAvailability();
       }
 
@@ -1652,11 +1592,8 @@
         });
       });
 
-      function triggerModalEditFilePick() {
-        modalEditImageFile.click();
-      }
-
-      btnModalEditPickPhoto.addEventListener("click", triggerModalEditFilePick);
+      btnModalEditPickPhoto.addEventListener("click", () => modalEditImageFile.click());
+      btnFormPickPhoto.addEventListener("click", () => formImageFile.click());
 
       modalEditImageFile.addEventListener("change", () => {
         const file = modalEditImageFile.files?.[0];
