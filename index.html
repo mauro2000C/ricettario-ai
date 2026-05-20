@@ -189,9 +189,14 @@
 
       .modal-star-btn:hover:not(:disabled),
       .modal-star-btn.is-filled,
-      .modal-star-btn.is-hover {
+      .modal-star-btn.is-hover,
+      .modal-star-btn.is-selected {
         color: #f59e0b;
         transform: scale(1.08);
+      }
+
+      .modal-star-btn.is-selected {
+        transform: scale(1.12);
       }
 
       .modal-star-btn:disabled {
@@ -496,7 +501,14 @@
             >
               <h4 class="text-xs font-bold uppercase tracking-wider text-orange-600">La tua valutazione</h4>
               <p id="modal-rating-aggregate" class="mt-2 text-sm font-semibold text-slate-800"></p>
-              <div id="modal-stars" class="modal-stars mt-3" role="group" aria-label="Voto da 1 a 5 stelle"></div>
+              <div id="modal-stars" class="modal-stars mt-3" role="group" aria-label="Voto da 1 a 5 stelle">
+                <button type="button" class="modal-star-btn" data-vote="1" aria-label="1 stella">☆</button>
+                <button type="button" class="modal-star-btn" data-vote="2" aria-label="2 stelle">☆</button>
+                <button type="button" class="modal-star-btn" data-vote="3" aria-label="3 stelle">☆</button>
+                <button type="button" class="modal-star-btn" data-vote="4" aria-label="4 stelle">☆</button>
+                <button type="button" class="modal-star-btn" data-vote="5" aria-label="5 stelle">☆</button>
+              </div>
+              <input type="hidden" id="modal-selected-vote" value="0" />
               <label for="modal-review-comment" class="sr-only">Commento recensione</label>
               <textarea
                 id="modal-review-comment"
@@ -863,6 +875,7 @@
       const modalRatingSection = document.getElementById("modal-rating-section");
       const modalRatingAggregate = document.getElementById("modal-rating-aggregate");
       const modalStarsEl = document.getElementById("modal-stars");
+      const modalSelectedVoteInput = document.getElementById("modal-selected-vote");
       const modalReviewComment = document.getElementById("modal-review-comment");
       const btnSubmitReview = document.getElementById("btn-submit-review");
       const modalReviewFeedback = document.getElementById("modal-review-feedback");
@@ -1026,23 +1039,67 @@
         modalReviewFeedback.classList.add(isError ? "text-rose-700" : "text-emerald-800");
       }
 
-      function renderModalStars() {
+      function syncModalVoteInput() {
+        if (modalSelectedVoteInput) {
+          modalSelectedVoteInput.value = modalSelectedVote > 0 ? String(modalSelectedVote) : "0";
+        }
+      }
+
+      function getSelectedModalVote() {
+        const fromInput = Number(modalSelectedVoteInput?.value);
+        const fromVar = Number(modalSelectedVote);
+        const voto = fromInput >= 1 && fromInput <= 5 ? fromInput : fromVar;
+        return voto >= 1 && voto <= 5 ? voto : 0;
+      }
+
+      function setModalVote(vote) {
+        const v = Math.max(0, Math.min(5, Math.round(Number(vote) || 0)));
+        modalSelectedVote = v;
+        modalHoverVote = 0;
+        syncModalVoteInput();
+        updateModalStarsUI();
+      }
+
+      function updateModalStarsUI() {
         if (!modalStarsEl) return;
         const display = modalHoverVote || modalSelectedVote || 0;
-        modalStarsEl.innerHTML = "";
-        for (let i = 1; i <= 5; i++) {
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "modal-star-btn";
-          if (i <= display) btn.classList.add(i <= (modalHoverVote || modalSelectedVote) ? "is-filled" : "");
-          if (modalHoverVote && i <= modalHoverVote) btn.classList.add("is-hover");
-          else if (!modalHoverVote && i <= modalSelectedVote) btn.classList.add("is-filled");
-          btn.setAttribute("data-vote", String(i));
-          btn.setAttribute("aria-label", `${i} ${i === 1 ? "stella" : "stelle"}`);
-          btn.textContent = i <= display ? "★" : "☆";
-          if (modalReviewSubmitting) btn.disabled = true;
-          modalStarsEl.appendChild(btn);
-        }
+        modalStarsEl.querySelectorAll(".modal-star-btn").forEach((btn) => {
+          const starValue = Number(btn.getAttribute("data-vote")) || 0;
+          btn.textContent = starValue <= display ? "★" : "☆";
+          btn.classList.toggle("is-selected", modalSelectedVote > 0 && starValue <= modalSelectedVote);
+          btn.classList.toggle("is-hover", modalHoverVote > 0 && starValue <= modalHoverVote);
+          btn.classList.toggle("is-filled", starValue <= display);
+          btn.disabled = !!modalReviewSubmitting;
+        });
+      }
+
+      function bindModalStarControls() {
+        if (!modalStarsEl || modalStarsEl.dataset.starsBound === "1") return;
+        modalStarsEl.dataset.starsBound = "1";
+
+        modalStarsEl.querySelectorAll(".modal-star-btn").forEach((btn) => {
+          const vote = Number(btn.getAttribute("data-vote")) || 0;
+
+          btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (modalReviewSubmitting) return;
+            setModalVote(vote);
+            showReviewFeedback("");
+          });
+
+          btn.addEventListener("mouseenter", () => {
+            if (modalReviewSubmitting) return;
+            modalHoverVote = vote;
+            updateModalStarsUI();
+          });
+        });
+
+        modalStarsEl.addEventListener("mouseleave", () => {
+          if (modalReviewSubmitting) return;
+          modalHoverVote = 0;
+          updateModalStarsUI();
+        });
       }
 
       function renderModalReviewsFeed(recipeId) {
@@ -1095,8 +1152,7 @@
         const recipeId = String(recipe.id);
         const bucket = ratingsMap[recipeId];
         modalUserReview = (bucket?.items || []).find((v) => v.utente_token === userToken) || null;
-        modalSelectedVote = modalUserReview ? Number(modalUserReview.voto) : 0;
-        modalHoverVote = 0;
+        setModalVote(modalUserReview ? Number(modalUserReview.voto) : 0);
 
         const { avg, count } = getRatingStats(recipe.id);
         if (modalRatingAggregate) {
@@ -1115,14 +1171,14 @@
         }
 
         showReviewFeedback("");
-        renderModalStars();
+        updateModalStarsUI();
         renderModalReviewsFeed(recipe.id);
       }
 
       async function submitOrUpdateReview() {
         if (!cloudConnected || !viewingRecipeId || modalReviewSubmitting) return;
 
-        const voto = Number(modalSelectedVote);
+        const voto = getSelectedModalVote();
         if (!voto || voto < 1 || voto > 5) {
           showReviewFeedback("Seleziona un voto da 1 a 5 stelle prima di inviare.", true);
           return;
@@ -1188,7 +1244,7 @@
           modalReviewSubmitting = false;
           if (btnSubmitReview) btnSubmitReview.disabled = false;
           if (modalReviewComment) modalReviewComment.disabled = false;
-          renderModalStars();
+          updateModalStarsUI();
         }
       }
 
@@ -1835,8 +1891,7 @@
       function closeViewModal() {
         viewingRecipeId = null;
         viewingRecipe = null;
-        modalSelectedVote = 0;
-        modalHoverVote = 0;
+        setModalVote(0);
         modalUserReview = null;
         showReviewFeedback("");
         showModalViewMode();
@@ -2072,30 +2127,6 @@
       btnModalDelete.addEventListener("click", () => deleteRecipeById(viewingRecipeId));
       btnSubmitReview.addEventListener("click", () => submitOrUpdateReview());
 
-      modalStarsEl.addEventListener("click", (e) => {
-        const btn = e.target.closest(".modal-star-btn");
-        if (!btn || modalReviewSubmitting) return;
-        modalSelectedVote = Number(btn.getAttribute("data-vote")) || 0;
-        modalHoverVote = 0;
-        showReviewFeedback("");
-        renderModalStars();
-      });
-
-      modalStarsEl.addEventListener("mouseover", (e) => {
-        const btn = e.target.closest(".modal-star-btn");
-        if (!btn || modalReviewSubmitting) return;
-        modalHoverVote = Number(btn.getAttribute("data-vote")) || 0;
-        renderModalStars();
-      });
-
-      modalStarsEl.addEventListener("mouseout", (e) => {
-        if (modalReviewSubmitting) return;
-        if (!modalStarsEl.contains(e.relatedTarget)) {
-          modalHoverVote = 0;
-          renderModalStars();
-        }
-      });
-
       modalEditCancel.addEventListener("click", () => {
         if (viewingRecipe) openViewModal(viewingRecipe);
         else closeViewModal();
@@ -2153,6 +2184,7 @@
         else if (!modal.classList.contains("hidden")) closeViewModal();
       });
 
+      bindModalStarControls();
       initApp();
     </script>
   </body>
