@@ -46,29 +46,198 @@
         outline: 2px solid rgb(251 146 60);
         outline-offset: 2px;
       }
+
+      /* —— Mobile (smartphone) —— */
+      @media (max-width: 768px) {
+        .app-header-shell {
+          padding-top: 1.25rem !important;
+          padding-bottom: 1.25rem !important;
+          padding-left: 0.875rem !important;
+          padding-right: 0.875rem !important;
+        }
+
+        .app-main {
+          padding-top: 1rem !important;
+          padding-bottom: 1.5rem !important;
+          padding-left: 0.875rem !important;
+          padding-right: 0.875rem !important;
+        }
+
+        .app-eyebrow {
+          font-size: 0.65rem;
+          letter-spacing: 0.12em;
+        }
+
+        .app-title {
+          font-size: clamp(1.25rem, 5.2vw, 1.65rem) !important;
+          line-height: 1.15 !important;
+          letter-spacing: -0.02em;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .app-subtitle {
+          font-size: 0.875rem !important;
+          line-height: 1.45;
+          margin-top: 0.5rem !important;
+        }
+
+        .app-search-block {
+          margin-top: 1.25rem !important;
+        }
+
+        .app-search-hint {
+          font-size: 0.75rem;
+          line-height: 1.4;
+        }
+
+        #btn-add-recipe {
+          width: 100%;
+          padding-top: 0.75rem !important;
+          padding-bottom: 0.75rem !important;
+        }
+
+        .accordion-trigger {
+          padding-left: 0.75rem !important;
+          padding-right: 0.75rem !important;
+          padding-top: 0.75rem !important;
+          padding-bottom: 0.75rem !important;
+        }
+
+        .accordion-trigger .chevron-icon {
+          height: 2.25rem;
+          width: 2.25rem;
+        }
+
+        .accordion-trigger .chevron-icon svg {
+          height: 1rem;
+          width: 1rem;
+        }
+
+        .accordion-category-title {
+          font-size: 1.125rem !important;
+        }
+
+        .recipe-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          gap: 0.625rem !important;
+          padding-left: 0.625rem !important;
+          padding-right: 0.625rem !important;
+          padding-bottom: 0.75rem !important;
+        }
+
+        .recipe-card-wrap {
+          border-radius: 1rem !important;
+          box-shadow: 0 1px 3px rgb(251 146 60 / 0.08) !important;
+        }
+
+        .recipe-card-wrap:hover {
+          transform: none !important;
+        }
+
+        .recipe-card-thumb,
+        .recipe-card-thumb-placeholder {
+          aspect-ratio: 5 / 4 !important;
+          border-radius: 1rem 1rem 0 0 !important;
+        }
+
+        .recipe-card-body {
+          padding: 0.625rem 0.5rem 0.75rem !important;
+        }
+
+        .recipe-card-title {
+          font-size: 0.8125rem !important;
+          line-height: 1.25 !important;
+        }
+
+        .recipe-card-tagline {
+          font-size: 0.6875rem !important;
+          line-height: 1.35 !important;
+          margin-top: 0.25rem !important;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+
+        .recipe-card-cta {
+          margin-top: 0.5rem !important;
+          font-size: 0.625rem !important;
+        }
+
+        .recipe-card-cta svg {
+          height: 0.75rem;
+          width: 0.75rem;
+        }
+
+        .recipe-card-actions {
+          padding: 0.5rem 0.625rem !important;
+          gap: 0.375rem !important;
+        }
+
+        .recipe-card-actions button {
+          font-size: 0.625rem !important;
+          padding: 0.25rem 0.5rem !important;
+        }
+
+        #empty-state {
+          padding-left: 1rem !important;
+          padding-right: 1rem !important;
+          padding-top: 2rem !important;
+          padding-bottom: 2rem !important;
+        }
+
+        #recipe-modal > div[role="document"],
+        #form-modal > div.relative.z-10 {
+          max-height: 94vh;
+          margin-left: 0.5rem;
+          margin-right: 0.5rem;
+        }
+
+        #modal-view-footer button,
+        #modal-edit-form .shrink-0 + div button {
+          font-size: 0.8125rem;
+          padding-top: 0.625rem !important;
+          padding-bottom: 0.625rem !important;
+        }
+      }
+
+      @media (max-width: 400px) {
+        .recipe-grid {
+          grid-template-columns: 1fr !important;
+          max-width: 20rem;
+          margin-left: auto;
+          margin-right: auto;
+        }
+
+        .app-title {
+          font-size: 1.2rem !important;
+        }
+      }
     </style>
   </head>
   <body class="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50/80 to-rose-50 font-sans text-slate-800 antialiased">
     <header class="border-b border-orange-100/80 bg-white/60 backdrop-blur-md">
-      <div class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+      <div class="app-header-shell mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div class="min-w-0 flex-1">
-            <p class="text-sm font-semibold uppercase tracking-widest text-orange-600/90">
+            <p class="app-eyebrow text-sm font-semibold uppercase tracking-widest text-orange-600/90">
               La tua cucina, organizzata · Cloud Supabase
             </p>
             <h1
-              class="mt-2 font-display text-4xl font-bold tracking-tight text-transparent sm:text-5xl bg-gradient-to-r from-orange-600 via-rose-600 to-amber-600 bg-clip-text"
+              class="app-title mt-2 font-display text-4xl font-bold tracking-tight text-transparent sm:text-5xl bg-gradient-to-r from-orange-600 via-rose-600 to-amber-600 bg-clip-text"
             >
               Il Mio Ricettario Smart
             </h1>
-            <p class="mt-3 max-w-2xl text-lg text-slate-600">
+            <p class="app-subtitle mt-3 max-w-2xl text-lg text-slate-600">
               Ricette condivise in tempo reale: tutti vedono aggiunte, modifiche ed eliminazioni sul cloud.
             </p>
         </div>
 
         <div id="cloud-banner" class="mt-6 hidden rounded-2xl border px-4 py-3 text-sm" role="status" aria-live="polite"></div>
 
-        <div class="mt-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div class="app-search-block mt-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div class="max-w-2xl flex-1">
             <label for="ingredient-search" class="mb-2 block text-sm font-semibold text-slate-700">
               Cerca per ingredienti
@@ -87,7 +256,7 @@
                 class="w-full rounded-2xl border border-orange-100 bg-white/90 py-3.5 pl-12 pr-4 text-slate-800 shadow-inner shadow-orange-900/5 ring-1 ring-slate-900/5 transition placeholder:text-slate-400 focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-400/60"
               />
             </div>
-            <p class="mt-2 text-sm text-slate-500">
+            <p class="app-search-hint mt-2 text-sm text-slate-500">
               Separa gli ingredienti con la virgola: restano solo le ricette che <strong class="font-semibold text-slate-600">contengono tutti</strong> i termini. Riconosce anche <strong class="font-semibold text-slate-600">singolare/plurale</strong>.
             </p>
           </div>
@@ -102,7 +271,7 @@
       </div>
     </header>
 
-    <main class="relative mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+    <main class="app-main relative mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
       <div
         id="loading-overlay"
         class="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/70 backdrop-blur-sm"
@@ -580,7 +749,7 @@
 
       function kitchenPlaceholderHtml(extraClass = "") {
         return `
-          <div class="flex aspect-[4/3] w-full items-center justify-center bg-slate-100 ${extraClass}" aria-hidden="true">
+          <div class="recipe-card-thumb-placeholder flex aspect-[4/3] w-full items-center justify-center bg-slate-100 ${extraClass}" aria-hidden="true">
             <div class="flex flex-col items-center gap-2 text-slate-400">
               <svg class="h-16 w-16" viewBox="0 0 64 64" fill="currentColor" aria-hidden="true">
                 <path d="M10 28c0-8 6-14 14-14 3 0 6 1 8 3 2-4 6-6 10-6 9 0 16 7 16 16v2H10v-2zm6 8h32l-2 14H18l-2-14zM8 50h48v4H8v-4z" opacity=".35"/>
@@ -760,12 +929,12 @@
         const src = resolveImageUrl(recipe.immagine_url);
         const alt = escapeHtml(recipe.title);
         if (src) {
-          return `<div class="relative aspect-[4/3] w-full overflow-hidden rounded-t-2xl bg-orange-50">
+          return `<div class="recipe-card-thumb relative aspect-[4/3] w-full overflow-hidden rounded-t-2xl bg-orange-50">
             <img src="${escapeHtml(src)}" alt="${alt}" class="h-full w-full object-cover" loading="lazy" onerror="this.classList.add('hidden');this.nextElementSibling?.classList.remove('hidden')" />
-            <div class="hidden h-full w-full">${kitchenPlaceholderHtml()}</div>
+            <div class="recipe-card-thumb-placeholder hidden h-full w-full">${kitchenPlaceholderHtml()}</div>
           </div>`;
         }
-        return kitchenPlaceholderHtml("rounded-t-2xl");
+        return kitchenPlaceholderHtml("recipe-card-thumb-placeholder rounded-t-2xl");
       }
 
       function parsePreparazione(raw) {
@@ -1100,10 +1269,10 @@
           <article class="recipe-card-wrap flex flex-col overflow-hidden rounded-2xl border border-orange-100/90 bg-white/90 shadow-sm shadow-orange-900/5 ring-1 ring-slate-900/5 transition hover:-translate-y-0.5 hover:shadow-md" role="listitem">
             <button type="button" class="recipe-card-view group flex flex-1 flex-col text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500" data-recipe-id="${rid}">
               ${thumb}
-              <span class="flex flex-1 flex-col p-5">
-                <span class="font-display text-lg font-bold text-slate-900 group-hover:text-orange-700">${title}</span>
-                <span class="mt-2 text-sm text-slate-600 leading-snug">${tag}</span>
-                <span class="mt-4 inline-flex items-center text-xs font-semibold text-orange-600">
+              <span class="recipe-card-body flex flex-1 flex-col p-5">
+                <span class="recipe-card-title font-display text-lg font-bold text-slate-900 group-hover:text-orange-700">${title}</span>
+                <span class="recipe-card-tagline mt-2 text-sm text-slate-600 leading-snug">${tag}</span>
+                <span class="recipe-card-cta mt-4 inline-flex items-center text-xs font-semibold text-orange-600">
                   Apri dettaglio
                   <svg class="ml-1 h-4 w-4 transition group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -1111,7 +1280,7 @@
                 </span>
               </span>
             </button>
-            ${cloudConnected ? `<div class="flex gap-2 border-t border-orange-50 px-4 py-3">${editBtn}${delBtn}</div>` : ""}
+            ${cloudConnected ? `<div class="recipe-card-actions flex gap-2 border-t border-orange-50 px-4 py-3">${editBtn}${delBtn}</div>` : ""}
           </article>
         `;
       }
@@ -1150,13 +1319,13 @@
                   </svg>
                 </span>
                 <span class="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                  <span role="heading" aria-level="3" id="accordion-heading-${catId}" class="font-display text-xl font-bold text-slate-900 sm:text-2xl">${heading}</span>
+                  <span role="heading" aria-level="3" id="accordion-heading-${catId}" class="accordion-category-title font-display text-xl font-bold text-slate-900 sm:text-2xl">${heading}</span>
                   <span class="shrink-0 text-sm font-medium text-slate-500">${countLabel}</span>
                 </span>
               </button>
               <div id="accordion-panel-${catId}" class="accordion-panel" role="region" aria-labelledby="accordion-heading-${catId}">
                 <div class="accordion-inner">
-                  <div class="grid gap-6 px-4 pb-6 pt-0 sm:grid-cols-2 lg:grid-cols-3" role="list">
+                  <div class="recipe-grid grid gap-6 px-4 pb-6 pt-0 sm:grid-cols-2 lg:grid-cols-3" role="list">
                     ${inCategory.map(cardHtml).join("")}
                   </div>
                 </div>
