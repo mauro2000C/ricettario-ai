@@ -211,6 +211,65 @@
         padding: 0.75rem 1rem;
       }
 
+      .modal-document {
+        position: relative;
+      }
+
+      .modal-close-btn {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        z-index: 30;
+        border-radius: 0.5rem;
+        padding: 0.5rem;
+        background: rgba(255, 255, 255, 0.92);
+        color: rgb(71 85 105);
+        box-shadow: 0 2px 12px rgba(15, 23, 42, 0.12);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
+
+      .modal-close-btn:hover {
+        background: rgb(248 250 252);
+        color: rgb(30 41 59);
+      }
+
+      .modal-scroll-body {
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .modal-detail-image {
+        width: 100%;
+        height: 250px;
+        flex-shrink: 0;
+        overflow: hidden;
+        background: linear-gradient(to bottom right, rgb(255 237 213), rgb(254 243 199));
+      }
+
+      .modal-detail-image img,
+      .modal-detail-image .recipe-card-thumb-placeholder {
+        width: 100%;
+        height: 100%;
+        min-height: 250px;
+        object-fit: cover;
+        display: block;
+      }
+
+      .modal-detail-image .recipe-card-thumb-placeholder {
+        aspect-ratio: auto;
+      }
+
+      @media (min-width: 769px) {
+        .modal-detail-image {
+          height: 350px;
+        }
+
+        .modal-detail-image img,
+        .modal-detail-image .recipe-card-thumb-placeholder {
+          min-height: 350px;
+        }
+      }
+
       /* —— Mobile (smartphone) —— */
       @media (max-width: 768px) {
         .hero-section {
@@ -461,27 +520,31 @@
     >
       <div id="modal-backdrop" class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" aria-hidden="true"></div>
       <div
-        class="relative z-10 flex w-full max-w-xl max-h-[90vh] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl shadow-orange-900/10 ring-1 ring-slate-900/5"
+        class="modal-document relative z-10 flex w-full max-w-xl max-h-[90vh] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl shadow-orange-900/10 ring-1 ring-slate-900/5"
         role="document"
       >
-        <div id="modal-image-wrap" class="relative w-full shrink-0 overflow-hidden bg-gradient-to-br from-orange-100 to-amber-50"></div>
-        <div class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-100 bg-white/95 px-6 py-4 backdrop-blur">
-          <h3 id="modal-title" class="font-display text-xl font-bold text-slate-900 pr-2"></h3>
-          <button
-            type="button"
-            id="modal-close"
-            class="shrink-0 rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
-            aria-label="Chiudi"
-          >
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+        <button
+          type="button"
+          id="modal-close"
+          class="modal-close-btn transition focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+          aria-label="Chiudi"
+        >
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
 
         <!-- Vista dettaglio -->
         <div id="modal-view-panel" class="flex min-h-0 flex-1 flex-col">
-          <div class="flex-1 space-y-6 overflow-y-auto px-6 py-5 text-slate-700">
+          <div id="modal-scroll-body" class="modal-scroll-body flex-1 min-h-0 overflow-y-auto text-slate-700">
+            <div
+              id="modal-image-wrap"
+              class="modal-detail-image relative w-full overflow-hidden bg-gradient-to-br from-orange-100 to-amber-50"
+            ></div>
+            <header class="border-b border-slate-100 px-6 pb-3 pt-4">
+              <h3 id="modal-title" class="font-display pr-10 text-xl font-bold text-slate-900"></h3>
+            </header>
+            <div class="modal-detail-content space-y-6 px-6 py-5">
             <section>
               <h4 class="text-xs font-bold uppercase tracking-wider text-orange-600">Ingredienti</h4>
               <ul id="modal-ingredients" class="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed"></ul>
@@ -530,22 +593,23 @@
                 <p id="modal-reviews-empty" class="mt-2 hidden text-sm italic text-slate-500">Ancora nessuna recensione per questa ricetta.</p>
               </section>
             </section>
-          </div>
-          <div id="modal-view-footer" class="flex shrink-0 flex-col gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 sm:flex-row">
-            <button
-              type="button"
-              id="btn-modal-edit"
-              class="flex-1 rounded-xl bg-amber-400 px-4 py-3 text-sm font-bold text-amber-950 shadow-sm transition hover:bg-amber-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
-            >
-              Modifica Ricetta
-            </button>
-            <button
-              type="button"
-              id="btn-modal-delete"
-              class="flex-1 rounded-xl bg-rose-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-rose-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
-            >
-              Elimina Ricetta
-            </button>
+            </div>
+            <div id="modal-view-footer" class="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 sm:flex-row">
+              <button
+                type="button"
+                id="btn-modal-edit"
+                class="flex-1 rounded-xl bg-amber-400 px-4 py-3 text-sm font-bold text-amber-950 shadow-sm transition hover:bg-amber-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+              >
+                Modifica Ricetta
+              </button>
+              <button
+                type="button"
+                id="btn-modal-delete"
+                class="flex-1 rounded-xl bg-rose-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-rose-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+              >
+                Elimina Ricetta
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1543,7 +1607,6 @@
         modalViewPanel.classList.add("flex");
         modalEditForm.classList.add("hidden");
         modalEditForm.classList.remove("flex");
-        modalImageWrap.classList.remove("hidden");
       }
 
       function showModalEditMode() {
@@ -1551,7 +1614,6 @@
         modalViewPanel.classList.remove("flex");
         modalEditForm.classList.remove("hidden");
         modalEditForm.classList.add("flex");
-        modalImageWrap.classList.remove("hidden");
       }
 
       async function fetchAllRecipes() {
@@ -1840,13 +1902,13 @@
       function renderModalImage(recipe) {
         const src = resolveImageUrl(recipe.immagine_url);
         if (src) {
-          modalImageWrap.innerHTML = `<img src="${escapeHtml(src)}" alt="${escapeHtml(recipe.title)}" class="aspect-[4/3] w-full object-cover" />`;
+          modalImageWrap.innerHTML = `<img src="${escapeHtml(src)}" alt="${escapeHtml(recipe.title)}" class="h-full w-full object-cover" />`;
           const img = modalImageWrap.querySelector("img");
           img.onerror = () => {
-            modalImageWrap.innerHTML = kitchenPlaceholderHtml();
+            modalImageWrap.innerHTML = kitchenPlaceholderHtml("h-full min-h-0");
           };
         } else {
-          modalImageWrap.innerHTML = kitchenPlaceholderHtml();
+          modalImageWrap.innerHTML = kitchenPlaceholderHtml("h-full min-h-0");
         }
       }
 
