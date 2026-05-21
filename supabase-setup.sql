@@ -17,6 +17,9 @@ create table if not exists public.ricette (
 -- Se la tabella esiste già senza immagine_url, aggiungi la colonna:
 alter table public.ricette add column if not exists immagine_url text default '';
 
+alter table public.ricette add column if not exists tempo_preparazione text default '';
+alter table public.ricette add column if not exists difficolta int4 check (difficolta is null or (difficolta >= 1 and difficolta <= 3));
+
 comment on table public.ricette is 'Ricette condivise del ricettario smart';
 comment on column public.ricette.ingredienti is 'Array JSON di stringhe (una riga per ingrediente)';
 comment on column public.ricette.preparazione is 'Oggetto JSON: {"dosi":"...","passi":["..."]}';

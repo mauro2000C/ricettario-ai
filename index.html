@@ -156,6 +156,38 @@
         box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28), 0 4px 12px rgba(234, 88, 12, 0.35);
       }
 
+      .recipe-card-meta-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+        border-radius: 9999px;
+        background: rgba(248, 250, 252, 0.9);
+        padding: 0.15rem 0.5rem;
+        font-weight: 600;
+        color: rgb(71 85 105);
+      }
+
+      .recipe-meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem 0.75rem;
+        margin-top: 0.75rem;
+      }
+
+      .recipe-meta-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        border-radius: 9999px;
+        border: 1px solid rgba(251, 191, 36, 0.28);
+        background: rgba(255, 251, 235, 0.95);
+        padding: 0.3rem 0.65rem;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: rgb(51 65 85);
+      }
+
       .recipe-card-rating {
         line-height: 1.35;
       }
@@ -541,8 +573,9 @@
               id="modal-image-wrap"
               class="modal-detail-image relative w-full overflow-hidden bg-gradient-to-br from-orange-100 to-amber-50"
             ></div>
-            <header class="border-b border-slate-100 px-6 pb-3 pt-4">
-              <h3 id="modal-title" class="font-display pr-10 text-xl font-bold text-slate-900"></h3>
+            <header class="border-b border-slate-100 px-6 pb-4 pt-4">
+              <h3 id="modal-title" class="font-display pr-10 text-2xl font-bold leading-tight text-slate-900 sm:text-3xl"></h3>
+              <div id="modal-recipe-meta" class="recipe-meta-row" aria-label="Informazioni sulla ricetta"></div>
             </header>
             <div class="modal-detail-content space-y-6 px-6 py-5">
             <section>
@@ -650,6 +683,26 @@
               <label for="modal-edit-descrizione" class="mb-1 block text-sm font-semibold text-slate-700">Descrizione *</label>
               <input id="modal-edit-descrizione" required class="w-full rounded-xl border border-orange-100 px-3 py-2.5 ring-1 ring-slate-900/5 focus:ring-2 focus:ring-orange-400/60" />
             </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label for="modal-edit-tempo" class="mb-1 block text-sm font-semibold text-slate-700">Tempo di preparazione</label>
+                <input
+                  id="modal-edit-tempo"
+                  type="text"
+                  placeholder="Es. 45 min"
+                  class="w-full rounded-xl border border-orange-100 px-3 py-2.5 ring-1 ring-slate-900/5 focus:ring-2 focus:ring-orange-400/60"
+                />
+              </div>
+              <div>
+                <label for="modal-edit-difficolta" class="mb-1 block text-sm font-semibold text-slate-700">Difficoltà</label>
+                <select id="modal-edit-difficolta" class="w-full rounded-xl border border-orange-100 px-3 py-2.5 ring-1 ring-slate-900/5 focus:ring-2 focus:ring-orange-400/60">
+                  <option value="">— Non specificata —</option>
+                  <option value="1">1 — Facile</option>
+                  <option value="2">2 — Media</option>
+                  <option value="3">3 — Difficile</option>
+                </select>
+              </div>
+            </div>
             <div>
               <label for="modal-edit-ingredienti" class="mb-1 block text-sm font-semibold text-slate-700">Ingredienti * (virgola)</label>
               <textarea id="modal-edit-ingredienti" required rows="3" class="w-full rounded-xl border border-orange-100 px-3 py-2.5 text-sm ring-1 ring-slate-900/5 focus:ring-2 focus:ring-orange-400/60"></textarea>
@@ -707,6 +760,26 @@
             <label for="form-descrizione" class="mb-1 block text-sm font-semibold text-slate-700">Descrizione breve *</label>
             <input id="form-descrizione" required class="w-full rounded-xl border border-orange-100 px-3 py-2.5 ring-1 ring-slate-900/5 focus:ring-2 focus:ring-orange-400/60" />
           </div>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label for="form-tempo" class="mb-1 block text-sm font-semibold text-slate-700">Tempo di preparazione</label>
+              <input
+                id="form-tempo"
+                type="text"
+                placeholder="Es. 30 min"
+                class="w-full rounded-xl border border-orange-100 px-3 py-2.5 ring-1 ring-slate-900/5 focus:ring-2 focus:ring-orange-400/60"
+              />
+            </div>
+            <div>
+              <label for="form-difficolta" class="mb-1 block text-sm font-semibold text-slate-700">Difficoltà</label>
+              <select id="form-difficolta" class="w-full rounded-xl border border-orange-100 px-3 py-2.5 ring-1 ring-slate-900/5 focus:ring-2 focus:ring-orange-400/60">
+                <option value="">— Non specificata —</option>
+                <option value="1">1 — Facile</option>
+                <option value="2">2 — Media</option>
+                <option value="3">3 — Difficile</option>
+              </select>
+            </div>
+          </div>
           <div>
             <label for="form-ingredienti" class="mb-1 block text-sm font-semibold text-slate-700">Ingredienti * (separati da virgola)</label>
             <textarea id="form-ingredienti" required rows="3" placeholder="Es. spaghetti, guanciale, uovo, pecorino" class="w-full rounded-xl border border-orange-100 px-3 py-2.5 text-sm ring-1 ring-slate-900/5 focus:ring-2 focus:ring-orange-400/60"></textarea>
@@ -762,6 +835,8 @@
           titolo: "Carbonara",
           categoria: "Primi",
           descrizione: "Classica romana, cremosa senza panna.",
+          tempo_preparazione: "25 min",
+          difficolta: 2,
           ingredienti: [
             "Spaghetti 320 g",
             "Guanciale 150 g",
@@ -784,6 +859,8 @@
           titolo: "Pasta al Pomodoro",
           categoria: "Primi",
           descrizione: "Semplice, profumata, sempre buona.",
+          tempo_preparazione: "20 min",
+          difficolta: 1,
           ingredienti: [
             "Pasta corta o lunga 320 g",
             "Passata di pomodoro 600 g (o pelati schiacciati)",
@@ -807,6 +884,8 @@
           titolo: "Tiramisù",
           categoria: "Dolci",
           descrizione: "Dolce al cucchiaio, equilibrato e morbido.",
+          tempo_preparazione: "40 min (+ riposo)",
+          difficolta: 2,
           ingredienti: [
             "Mascarpone 500 g",
             "Uova fresche medie 4 (solo tuorli per la versione classica cruda)",
@@ -830,6 +909,8 @@
           titolo: "Lasagne",
           categoria: "Primi",
           descrizione: "Strati di pasta, ragù e besciamella.",
+          tempo_preparazione: "90 min",
+          difficolta: 3,
           ingredienti: [
             "Lasagne fresche o secche precotte 500 g",
             "Ragù di carne pronto 800 g (o homemade)",
@@ -852,6 +933,8 @@
           titolo: "Saltimbocca alla Romana",
           categoria: "Secondi",
           descrizione: "Scaloppine avvolte in prosciutto e salvia.",
+          tempo_preparazione: "25 min",
+          difficolta: 2,
           ingredienti: [
             "Fettine di vitello magro 8 (circa 600 g)",
             "Prosciutto crudo dolce 8 fette sottili",
@@ -875,6 +958,8 @@
           titolo: "Patate al Forno",
           categoria: "Contorno",
           descrizione: "Croccanti fuori, morbide dentro.",
+          tempo_preparazione: "50 min",
+          difficolta: 1,
           ingredienti: [
             "Patate a pasta gialla 1 kg",
             "Olio extravergine d'oliva 4 cucchiai",
@@ -932,6 +1017,7 @@
       const btnModalEdit = document.getElementById("btn-modal-edit");
       const btnModalDelete = document.getElementById("btn-modal-delete");
       const elTitle = document.getElementById("modal-title");
+      const modalRecipeMeta = document.getElementById("modal-recipe-meta");
       const elIngredients = document.getElementById("modal-ingredients");
       const elDoses = document.getElementById("modal-doses");
       const elSteps = document.getElementById("modal-steps");
@@ -955,6 +1041,8 @@
       const modalEditTitolo = document.getElementById("modal-edit-titolo");
       const modalEditCategoria = document.getElementById("modal-edit-categoria");
       const modalEditDescrizione = document.getElementById("modal-edit-descrizione");
+      const modalEditTempo = document.getElementById("modal-edit-tempo");
+      const modalEditDifficolta = document.getElementById("modal-edit-difficolta");
       const modalEditIngredienti = document.getElementById("modal-edit-ingredienti");
       const modalEditPreparazione = document.getElementById("modal-edit-preparazione");
       const modalEditImageFile = document.getElementById("modal-edit-image-file");
@@ -977,6 +1065,8 @@
       const formTitolo = document.getElementById("form-titolo");
       const formCategoria = document.getElementById("form-categoria");
       const formDescrizione = document.getElementById("form-descrizione");
+      const formTempo = document.getElementById("form-tempo");
+      const formDifficolta = document.getElementById("form-difficolta");
       const formIngredienti = document.getElementById("form-ingredienti");
       const formPreparazione = document.getElementById("form-preparazione");
       const formImmagineUrl = document.getElementById("form-immagine-url");
@@ -1050,6 +1140,72 @@
 
       function votesCountLabel(count) {
         return count === 1 ? "1 voto" : `${count} voti`;
+      }
+
+      function normalizeDifficolta(value) {
+        const n = Number(value);
+        if (n >= 1 && n <= 3) return Math.round(n);
+        return null;
+      }
+
+      function difficoltaFiresHtml(level) {
+        const n = normalizeDifficolta(level);
+        if (!n) return "";
+        return "🔥".repeat(n);
+      }
+
+      function parseDifficoltaFromSelect(el) {
+        if (!el) return null;
+        const v = String(el.value || "").trim();
+        if (!v) return null;
+        return normalizeDifficolta(v);
+      }
+
+      function cardRecipeMetaHtml(recipe) {
+        const tempo = String(recipe.tempo_preparazione || "").trim();
+        const diff = normalizeDifficolta(recipe.difficolta);
+        const bits = [];
+        if (tempo) {
+          bits.push(`<span class="recipe-card-meta-item" title="Tempo di preparazione">🕒 ${escapeHtml(tempo)}</span>`);
+        }
+        if (diff) {
+          bits.push(
+            `<span class="recipe-card-meta-item" title="Difficoltà ${diff} su 3" aria-label="Difficoltà ${diff} su 3">${difficoltaFiresHtml(diff)}</span>`
+          );
+        }
+        if (!bits.length) return "";
+        return `<div class="recipe-card-meta mt-2 flex flex-wrap items-center gap-2">${bits.join("")}</div>`;
+      }
+
+      function modalRatingMetaHtml(recipeId) {
+        if (!cloudConnected) return "";
+        const { avg, count } = getRatingStats(recipeId);
+        if (!count) {
+          return `<span class="recipe-meta-pill text-slate-500">★ Nessuna valutazione</span>`;
+        }
+        const votes = escapeHtml(votesCountLabel(count));
+        return `<span class="recipe-meta-pill"><span class="rating-stars-gold" aria-hidden="true">★</span> ${avg.toFixed(1)} <span class="font-normal text-slate-500">(${votes})</span></span>`;
+      }
+
+      function renderModalRecipeMeta(recipe) {
+        if (!modalRecipeMeta || !recipe) return;
+        const parts = [];
+        const tempo = String(recipe.tempo_preparazione || "").trim();
+        const diff = normalizeDifficolta(recipe.difficolta);
+
+        if (tempo) {
+          parts.push(`<span class="recipe-meta-pill">🕒 Tempo: ${escapeHtml(tempo)}</span>`);
+        }
+        if (diff) {
+          parts.push(`<span class="recipe-meta-pill">Difficoltà: ${difficoltaFiresHtml(diff)}</span>`);
+        }
+        const ratingPart = modalRatingMetaHtml(recipe.id);
+        if (ratingPart) parts.push(ratingPart);
+
+        modalRecipeMeta.innerHTML =
+          parts.length > 0
+            ? parts.join("")
+            : `<span class="text-sm text-slate-500">Aggiungi tempo e difficoltà dalla modifica ricetta.</span>`;
       }
 
       function cardRatingHtml(recipeId) {
@@ -1218,12 +1374,12 @@
         modalUserReview = (bucket?.items || []).find((v) => v.utente_token === userToken) || null;
         setModalVote(modalUserReview ? Number(modalUserReview.voto) : 0);
 
-        const { avg, count } = getRatingStats(recipe.id);
         if (modalRatingAggregate) {
-          modalRatingAggregate.textContent = count
-            ? `Media ★ ${avg.toFixed(1)} · ${votesCountLabel(count)}`
-            : "Nessuna valutazione ancora — sii il primo a votare!";
+          modalRatingAggregate.textContent = modalUserReview
+            ? "Puoi aggiornare il tuo voto e il commento qui sotto."
+            : "Valuta questa ricetta e lascia un commento (facoltativo):";
         }
+        renderModalRecipeMeta(recipe);
 
         if (modalReviewComment) {
           modalReviewComment.value = (modalUserReview?.commento || "").trim();
@@ -1300,7 +1456,10 @@
           await refreshRatingsFromCloud();
           renderRecipeSections();
           const current = findRecipe(viewingRecipeId);
-          if (current) populateModalRatings(current);
+          if (current) {
+            renderModalRecipeMeta(current);
+            populateModalRatings(current);
+          }
         } catch (err) {
           console.error(err);
           showReviewFeedback(formatSupabaseError(err), true);
@@ -1547,6 +1706,8 @@
           title: row.titolo,
           categoria: row.categoria,
           tagline: row.descrizione || "",
+          tempo_preparazione: row.tempo_preparazione || "",
+          difficolta: normalizeDifficolta(row.difficolta),
           ingredients: parseIngredienti(row.ingredienti),
           doses: prep.dosi,
           steps: Array.isArray(prep.passi) ? prep.passi.map(String) : [],
@@ -1556,10 +1717,13 @@
       }
 
       function recipeToRow(recipe) {
+        const diff = normalizeDifficolta(recipe.difficolta);
         return {
           titolo: recipe.title,
           categoria: recipe.categoria,
           descrizione: recipe.tagline,
+          tempo_preparazione: String(recipe.tempo_preparazione || "").trim(),
+          difficolta: diff,
           ingredienti: recipe.ingredients,
           preparazione: { dosi: recipe.doses || "", passi: recipe.steps || [] },
           immagine_url: (recipe.immagine_url || "").trim(),
@@ -1567,10 +1731,13 @@
       }
 
       function seedToRow(seed) {
+        const diff = normalizeDifficolta(seed.difficolta);
         return {
           titolo: seed.titolo,
           categoria: seed.categoria,
           descrizione: seed.descrizione,
+          tempo_preparazione: String(seed.tempo_preparazione || "").trim(),
+          difficolta: diff,
           ingredienti: seed.ingredienti,
           preparazione: seed.preparazione,
           immagine_url: seed.immagine_url || "",
@@ -1585,6 +1752,8 @@
           title: seed.titolo,
           categoria: seed.categoria,
           tagline: seed.descrizione,
+          tempo_preparazione: seed.tempo_preparazione || "",
+          difficolta: normalizeDifficolta(seed.difficolta),
           ingredients: seed.ingredienti,
           doses: prep.dosi,
           steps: prep.passi,
@@ -1619,7 +1788,7 @@
       async function fetchAllRecipes() {
         const { data, error } = await supabaseClient
           .from("ricette")
-          .select("id, created_at, titolo, categoria, descrizione, ingredienti, preparazione, immagine_url")
+          .select("id, created_at, titolo, categoria, descrizione, tempo_preparazione, difficolta, ingredienti, preparazione, immagine_url")
           .order("created_at", { ascending: true });
         if (error) throw error;
         return (data || []).map(rowToRecipe);
@@ -1820,6 +1989,7 @@
               ${thumb}
               <span class="recipe-card-body flex flex-1 flex-col p-5">
                 <span class="recipe-card-title font-display text-lg font-bold text-slate-900 group-hover:text-orange-700">${title}</span>
+                ${cardRecipeMetaHtml(r)}
                 ${cardRatingHtml(r.id)}
                 <span class="recipe-card-tagline mt-2 text-sm text-slate-600 leading-snug">${tag}</span>
                 <span class="recipe-card-cta mt-4 inline-flex items-center text-xs font-semibold text-orange-600">
@@ -1920,6 +2090,7 @@
 
         renderModalImage(recipe);
         elTitle.textContent = recipe.title;
+        renderModalRecipeMeta(recipe);
         elIngredients.innerHTML = recipe.ingredients
           .map((line) => {
             const safe = escapeHtml(line);
@@ -1973,6 +2144,10 @@
         modalEditTitolo.value = recipe.title;
         modalEditCategoria.value = recipe.categoria;
         modalEditDescrizione.value = recipe.tagline;
+        if (modalEditTempo) modalEditTempo.value = recipe.tempo_preparazione || "";
+        if (modalEditDifficolta) {
+          modalEditDifficolta.value = recipe.difficolta ? String(recipe.difficolta) : "";
+        }
         modalEditIngredienti.value = recipe.ingredients.join(", ");
         modalEditPreparazione.value = (recipe.steps || []).join("\n");
         resetModalEditImageState(recipe.immagine_url || "");
@@ -2043,6 +2218,8 @@
           title: formTitolo.value.trim(),
           categoria: formCategoria.value,
           tagline: formDescrizione.value.trim(),
+          tempo_preparazione: (formTempo?.value || "").trim(),
+          difficolta: parseDifficoltaFromSelect(formDifficolta),
           doses: "",
           ingredients: commaListFromInput(formIngredienti),
           steps: linesFromTextarea(formPreparazione),
@@ -2088,6 +2265,8 @@
           title: modalEditTitolo.value.trim(),
           categoria: modalEditCategoria.value,
           tagline: modalEditDescrizione.value.trim(),
+          tempo_preparazione: (modalEditTempo?.value || "").trim(),
+          difficolta: parseDifficoltaFromSelect(modalEditDifficolta),
           doses: existing?.doses || "",
           ingredients: commaListFromInput(modalEditIngredienti),
           steps: linesFromTextarea(modalEditPreparazione),
